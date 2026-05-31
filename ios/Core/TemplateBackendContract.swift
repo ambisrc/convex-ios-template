@@ -62,9 +62,22 @@ struct TemplateCommandResult: Decodable, Equatable {
     }
 }
 
-struct TemplateDeleteAccountResult: Decodable, Equatable {
-    enum Status: String, Decodable, Equatable {
-        case deleted
+enum TemplateDeleteAccountResult: Decodable, Equatable {
+    case deleted(
+        deleted: DeletedCounts,
+        batches: Int,
+        cleanup: Cleanup
+    )
+    case deletionInProgress(
+        deleted: DeletedCounts,
+        batches: Int,
+        jobStatus: JobStatus
+    )
+
+    enum JobStatus: String, Decodable, Equatable {
+        case deleting
+        case cleanupPending = "cleanup_pending"
+        case cleanupRunning = "cleanup_running"
     }
 
     struct DeletedCounts: Decodable, Equatable {
@@ -84,10 +97,40 @@ struct TemplateDeleteAccountResult: Decodable, Equatable {
         let sentry: CleanupStatus
     }
 
-    let status: Status
-    let deleted: DeletedCounts
-    let batches: Int
-    let cleanup: Cleanup
+    private enum CodingKeys: String, CodingKey {
+        case status
+        case deleted
+        case batches
+        case cleanup
+        case jobStatus
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let status = try container.decode(String.self, forKey: .status)
+        let deleted = try container.decode(DeletedCounts.self, forKey: .deleted)
+        let batches = try container.decode(Int.self, forKey: .batches)
+        switch status {
+        case "deleted":
+            self = .deleted(
+                deleted: deleted,
+                batches: batches,
+                cleanup: try container.decode(Cleanup.self, forKey: .cleanup)
+            )
+        case "deletion_in_progress":
+            self = .deletionInProgress(
+                deleted: deleted,
+                batches: batches,
+                jobStatus: try container.decode(JobStatus.self, forKey: .jobStatus)
+            )
+        default:
+            throw DecodingError.dataCorruptedError(
+                forKey: .status,
+                in: container,
+                debugDescription: "Unsupported delete account status: \(status)"
+            )
+        }
+    }
 }
 
 enum TemplateVoiceTranscriptionResult: Decodable, Equatable {

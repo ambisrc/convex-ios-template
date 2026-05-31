@@ -76,7 +76,12 @@ shapes, response status values, or read-list response fields.
 
 ## Account Cleanup
 
-`commands:deleteAccount` deletes app-owned Convex rows in bounded batches.
+`commands:deleteAccount` deletes app-owned Convex rows in bounded batches. When
+more rows remain than fit in the synchronous action budget, Convex schedules
+continuation mutations with `ctx.scheduler.runAfter(0, ...)` until app-owned
+rows are gone. PostHog and Sentry cleanup run once after deletion completes.
+Missing PostHog or Sentry configuration remains a skip state.
+
 PostHog cleanup uses the configured deletion request API. Sentry cleanup records
 a best-effort account-cleanup report for project operators; it does not claim
 to delete or scrub Sentry user records.

@@ -223,8 +223,7 @@ private final class StubCommandService: TemplateCommandServicing {
 
     func deleteAccount() async throws -> TemplateDeleteAccountResult {
         deleteAccountCallCount += 1
-        return TemplateDeleteAccountResult(
-            status: .deleted,
+        return .deleted(
             deleted: .init(
                 profiles: 0,
                 entries: 0,

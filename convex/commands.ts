@@ -1,13 +1,14 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { action } from "./_generated/server";
+import { deletionJobToDeletedResponse } from "./account";
 import { requireOwnerKey } from "./lib/auth";
 import { commandSourceValidator, type AssistantOperation, type CommandSource } from "./lib/operations";
 import { interpretCommand } from "./lib/commandInterpreter";
 import { withSentry } from "./lib/sentry";
 import { transcribeVoice } from "./lib/voiceTranscription";
 
-const MAX_DELETE_ACCOUNT_BATCHES = 20;
+const MAX_SYNCHRONOUS_DELETE_BATCHES = 20;
 
 export type CommandResponse = {
   status: "applied";
@@ -31,11 +32,6 @@ type DeleteCounts = {
   usageEvents: number;
 };
 
-type DeleteBatchResult = {
-  deleted: DeleteCounts;
-  hasMore: boolean;
-};
-
 type CleanupResult =
   | { status: "skipped"; reason: "missing_config" }
   | { status: "requested" };
@@ -44,7 +40,7 @@ type SentryCleanupResult =
   | { status: "skipped"; reason: "missing_config" }
   | { status: "reported" };
 
-type DeleteAccountResponse = {
+type DeleteAccountDeletedResponse = {
   status: "deleted";
   deleted: DeleteCounts;
   batches: number;
@@ -53,6 +49,15 @@ type DeleteAccountResponse = {
     sentry: SentryCleanupResult;
   };
 };
+
+type DeleteAccountInProgressResponse = {
+  status: "deletion_in_progress";
+  deleted: DeleteCounts;
+  batches: number;
+  jobStatus: "deleting" | "cleanup_pending" | "cleanup_running";
+};
+
+export type DeleteAccountResponse = DeleteAccountDeletedResponse | DeleteAccountInProgressResponse;
 
 export const submitCommand = action({
   args: {
@@ -106,29 +111,49 @@ export const deleteAccount = action({
   handler: async (ctx): Promise<DeleteAccountResponse> => {
     return await withSentry("commands:deleteAccount", ctx, async () => {
       const ownerKey = await requireOwnerKey(ctx);
-      const deleted = emptyDeleteCounts();
-      let batches = 0;
-      let hasMore = true;
+      let result = await ctx.runMutation(internal.account.requestAccountDeletion, { ownerKey });
 
-      while (hasMore) {
-        if (batches >= MAX_DELETE_ACCOUNT_BATCHES) {
-          throw new Error("DELETE_ACCOUNT_BATCH_LIMIT_EXCEEDED");
-        }
-        const batch: DeleteBatchResult = await ctx.runMutation(internal.account.deleteAccount, { ownerKey });
-        addDeleteCounts(deleted, batch.deleted);
-        batches += 1;
-        hasMore = batch.hasMore;
+      if (result.kind === "already_deleted") {
+        return deletionJobToDeletedResponse(result.job);
+      }
+      if (result.kind === "in_progress") {
+        return {
+          status: "deletion_in_progress",
+          deleted: result.deleted,
+          batches: result.batches,
+          jobStatus: result.jobStatus,
+        };
       }
 
-      const posthog: CleanupResult = await ctx.runAction(internal.posthog.deletePerson, { ownerKey });
-      const sentry: SentryCleanupResult = await ctx.runAction(internal.sentry.recordAccountCleanup, { ownerKey });
+      while (result.kind === "batch_done" && result.hasMore && result.batches < MAX_SYNCHRONOUS_DELETE_BATCHES) {
+        result = await ctx.runMutation(internal.account.runAccountDeletionBatch, { ownerKey });
+      }
 
-      return {
-        status: "deleted",
-        deleted,
-        batches,
-        cleanup: { posthog, sentry },
-      };
+      if (result.kind === "batch_done" && result.hasMore) {
+        await ctx.runMutation(internal.account.scheduleAccountDeletionContinuation, { ownerKey });
+        return {
+          status: "deletion_in_progress",
+          deleted: result.deleted,
+          batches: result.batches,
+          jobStatus: result.jobStatus,
+        };
+      }
+      if (result.kind === "ready_for_inline_cleanup") {
+        const posthog: CleanupResult = await ctx.runAction(internal.posthog.deletePerson, { ownerKey });
+        const sentry: SentryCleanupResult = await ctx.runAction(internal.sentry.recordAccountCleanup, { ownerKey });
+        await ctx.runMutation(internal.account.finalizeAccountDeletion, {
+          ownerKey,
+          cleanup: { posthog, sentry },
+        });
+        return {
+          status: "deleted",
+          deleted: result.deleted,
+          batches: result.batches,
+          cleanup: { posthog, sentry },
+        };
+      }
+
+      throw new Error("UNEXPECTED_ACCOUNT_DELETION_RESULT");
     });
   },
 });
@@ -145,21 +170,3 @@ export const transcribeVoiceCommand = action({
     });
   },
 });
-
-function emptyDeleteCounts(): DeleteCounts {
-  return {
-    profiles: 0,
-    entries: 0,
-    commandHistory: 0,
-    appleSignInCredentials: 0,
-    usageEvents: 0,
-  };
-}
-
-function addDeleteCounts(total: DeleteCounts, batch: DeleteCounts) {
-  total.profiles += batch.profiles;
-  total.entries += batch.entries;
-  total.commandHistory += batch.commandHistory;
-  total.appleSignInCredentials += batch.appleSignInCredentials;
-  total.usageEvents += batch.usageEvents;
-}

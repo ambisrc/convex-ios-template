@@ -55,7 +55,9 @@ final class TemplateBackendClientTests: XCTestCase {
         let result = try await client.deleteAccount()
 
         XCTAssertEqual(caller.actionCalls.map(\.name), [TemplateBackendEndpoints.deleteAccount])
-        XCTAssertEqual(result.status, .deleted)
+        guard case .deleted = result else {
+            return XCTFail("Expected deleted status")
+        }
     }
 
     func testPlaceholderBackendClientFailsSafelyWithoutCaller() async {

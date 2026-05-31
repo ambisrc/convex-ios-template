@@ -121,7 +121,13 @@ Clone-owned replacement points:
 Stable contract:
 
 - `commands:deleteAccount` is the public action.
-- `convex/account.ts` owns bounded account-lifecycle writes.
+- `convex/account.ts` owns bounded account-lifecycle writes and
+  `accountDeletionJobs` continuation state.
+- Small and medium accounts can finish synchronously with
+  `status: "deleted"`.
+- Large accounts return `status: "deletion_in_progress"` with aggregate
+  deleted counts and `jobStatus`, then continue through scheduled mutations
+  until cleanup runs.
 - PostHog cleanup can request person deletion when configured.
 - Sentry cleanup records a best-effort operator report and does not claim user
   deletion.

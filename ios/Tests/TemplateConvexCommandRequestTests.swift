@@ -99,12 +99,29 @@ final class TemplateConvexCommandRequestTests: XCTestCase {
 
         let result = try JSONDecoder().decode(TemplateDeleteAccountResult.self, from: json)
 
-        XCTAssertEqual(result.status, .deleted)
-        XCTAssertEqual(result.deleted.entries, 1)
-        XCTAssertEqual(result.deleted.commandHistory, 1)
-        XCTAssertEqual(result.batches, 1)
-        XCTAssertEqual(result.cleanup.posthog.status, "skipped")
-        XCTAssertEqual(result.cleanup.sentry.status, "skipped")
+        guard case let .deleted(deleted, batches, cleanup) = result else {
+            return XCTFail("Expected deleted status")
+        }
+        XCTAssertEqual(deleted.entries, 1)
+        XCTAssertEqual(deleted.commandHistory, 1)
+        XCTAssertEqual(batches, 1)
+        XCTAssertEqual(cleanup.posthog.status, "skipped")
+        XCTAssertEqual(cleanup.sentry.status, "skipped")
+    }
+
+    func testDeleteAccountResponseDecodesDeletionInProgressFixture() throws {
+        let json = try PublicActionContractFixture.load()
+            .requiredAction(TemplateBackendEndpoints.deleteAccount)
+            .namedResponseData("deletionInProgress")
+
+        let result = try JSONDecoder().decode(TemplateDeleteAccountResult.self, from: json)
+
+        guard case let .deletionInProgress(deleted, batches, jobStatus) = result else {
+            return XCTFail("Expected deletion_in_progress status")
+        }
+        XCTAssertEqual(deleted.entries, 1000)
+        XCTAssertEqual(batches, 20)
+        XCTAssertEqual(jobStatus, .deleting)
     }
 }
 
@@ -136,6 +153,7 @@ private struct PublicActionContract: Decodable {
     let request: [String: String]
     let success: JSONValue
     let configurationMissing: JSONValue?
+    let deletionInProgress: JSONValue?
 
     func successData() throws -> Data {
         try JSONEncoder().encode(success)
@@ -143,6 +161,15 @@ private struct PublicActionContract: Decodable {
 
     func configurationMissingData() throws -> Data {
         try JSONEncoder().encode(XCTUnwrap(configurationMissing))
+    }
+
+    func namedResponseData(_ name: String) throws -> Data {
+        switch name {
+        case "deletionInProgress":
+            return try JSONEncoder().encode(XCTUnwrap(deletionInProgress))
+        default:
+            throw XCTSkip("Unsupported named response: \(name)")
+        }
     }
 }
 

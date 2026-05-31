@@ -1,8 +1,38 @@
 import { v } from "convex/values";
+import type { Doc, Id } from "./_generated/dataModel";
+import { internal } from "./_generated/api";
 import type { MutationCtx } from "./_generated/server";
-import { internalMutation } from "./_generated/server";
+import { internalAction, internalMutation } from "./_generated/server";
 
 const DELETE_BATCH_LIMIT = 50;
+
+export type DeleteCounts = {
+  profiles: number;
+  entries: number;
+  commandHistory: number;
+  appleSignInCredentials: number;
+  usageEvents: number;
+};
+
+type DeleteBatchResult = {
+  deleted: DeleteCounts;
+  hasMore: boolean;
+};
+
+type CleanupResult =
+  | { status: "skipped"; reason: "missing_config" }
+  | { status: "requested" };
+
+type SentryCleanupResult =
+  | { status: "skipped"; reason: "missing_config" }
+  | { status: "reported" };
+
+type AccountDeletionCleanup = {
+  posthog: CleanupResult;
+  sentry: SentryCleanupResult;
+};
+
+type DeletionJobDoc = Doc<"accountDeletionJobs">;
 
 export const recordAppleSignInAuthorization = internalMutation({
   args: {
@@ -42,29 +72,266 @@ export const deleteAccount = internalMutation({
     ownerKey: v.string(),
   },
   handler: async (ctx, args) => {
-    const profiles = await deleteProfiles(ctx, args.ownerKey);
-    const entries = await deleteEntries(ctx, args.ownerKey);
-    const commandHistory = await deleteCommandHistory(ctx, args.ownerKey);
-    const appleSignInCredentials = await deleteAppleCredentials(ctx, args.ownerKey);
-    const usageEvents = await deleteUsageEvents(ctx, args.ownerKey);
-
-    return {
-      deleted: {
-        profiles: profiles.deleted,
-        entries: entries.deleted,
-        commandHistory: commandHistory.deleted,
-        appleSignInCredentials: appleSignInCredentials.deleted,
-        usageEvents: usageEvents.deleted,
-      },
-      hasMore:
-        profiles.hasMore
-        || entries.hasMore
-        || commandHistory.hasMore
-        || appleSignInCredentials.hasMore
-        || usageEvents.hasMore,
-    };
+    return await deleteOwnedDataBatch(ctx, args.ownerKey);
   },
 });
+
+export const requestAccountDeletion = internalMutation({
+  args: {
+    ownerKey: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const existing = await getDeletionJob(ctx, args.ownerKey);
+    if (existing?.status === "deleted") {
+      return { kind: "already_deleted" as const, job: existing };
+    }
+    if (existing && isActiveDeletionJob(existing.status)) {
+      return {
+        kind: "in_progress" as const,
+        deleted: existing.deleted,
+        batches: existing.batches,
+        jobStatus: existing.status,
+      };
+    }
+
+    const now = Date.now();
+    const jobId = existing?._id ?? await ctx.db.insert("accountDeletionJobs", {
+      ownerKey: args.ownerKey,
+      status: "deleting",
+      deleted: emptyDeleteCounts(),
+      batches: 0,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return await runDeletionBatch(ctx, {
+      jobId,
+      ownerKey: args.ownerKey,
+      scheduleContinuationWhenMore: false,
+      scheduleCleanupWhenComplete: false,
+    });
+  },
+});
+
+export const runAccountDeletionBatch = internalMutation({
+  args: {
+    ownerKey: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const job = await getDeletionJob(ctx, args.ownerKey);
+    if (!job || job.status !== "deleting") {
+      throw new Error("ACCOUNT_DELETION_JOB_NOT_DELETING");
+    }
+
+    return await runDeletionBatch(ctx, {
+      jobId: job._id,
+      ownerKey: args.ownerKey,
+      scheduleContinuationWhenMore: false,
+      scheduleCleanupWhenComplete: false,
+    });
+  },
+});
+
+export const scheduleAccountDeletionContinuation = internalMutation({
+  args: {
+    ownerKey: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const job = await getDeletionJob(ctx, args.ownerKey);
+    if (!job || job.status !== "deleting") {
+      return;
+    }
+    await ctx.scheduler.runAfter(0, internal.account.continueAccountDeletion, {
+      ownerKey: args.ownerKey,
+    });
+  },
+});
+
+export const continueAccountDeletion = internalMutation({
+  args: {
+    ownerKey: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const job = await getDeletionJob(ctx, args.ownerKey);
+    if (!job || job.status !== "deleting") {
+      return null;
+    }
+
+    return await runDeletionBatch(ctx, {
+      jobId: job._id,
+      ownerKey: args.ownerKey,
+      scheduleContinuationWhenMore: true,
+      scheduleCleanupWhenComplete: true,
+    });
+  },
+});
+
+export const beginAccountDeletionCleanup = internalMutation({
+  args: {
+    ownerKey: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const job = await getDeletionJob(ctx, args.ownerKey);
+    if (!job) {
+      return false;
+    }
+    if (job.status === "deleted" || job.status === "cleanup_running") {
+      return false;
+    }
+    if (job.status !== "cleanup_pending") {
+      return false;
+    }
+    await ctx.db.patch(job._id, {
+      status: "cleanup_running",
+      updatedAt: Date.now(),
+    });
+    return true;
+  },
+});
+
+export const finalizeAccountDeletion = internalMutation({
+  args: {
+    ownerKey: v.string(),
+    cleanup: v.object({
+      posthog: v.union(
+        v.object({ status: v.literal("skipped"), reason: v.literal("missing_config") }),
+        v.object({ status: v.literal("requested") }),
+      ),
+      sentry: v.union(
+        v.object({ status: v.literal("skipped"), reason: v.literal("missing_config") }),
+        v.object({ status: v.literal("reported") }),
+      ),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const job = await getDeletionJob(ctx, args.ownerKey);
+    if (!job) {
+      return null;
+    }
+    await ctx.db.patch(job._id, {
+      status: "deleted",
+      cleanup: args.cleanup,
+      updatedAt: Date.now(),
+    });
+    return await ctx.db.get(job._id);
+  },
+});
+
+export const runAccountDeletionCleanup = internalAction({
+  args: {
+    ownerKey: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const shouldRun = await ctx.runMutation(internal.account.beginAccountDeletionCleanup, {
+      ownerKey: args.ownerKey,
+    });
+    if (!shouldRun) {
+      return;
+    }
+
+    const posthog: CleanupResult = await ctx.runAction(internal.posthog.deletePerson, {
+      ownerKey: args.ownerKey,
+    });
+    const sentry: SentryCleanupResult = await ctx.runAction(internal.sentry.recordAccountCleanup, {
+      ownerKey: args.ownerKey,
+    });
+
+    await ctx.runMutation(internal.account.finalizeAccountDeletion, {
+      ownerKey: args.ownerKey,
+      cleanup: { posthog, sentry },
+    });
+  },
+});
+
+async function runDeletionBatch(
+  ctx: MutationCtx,
+  args: {
+    jobId: Id<"accountDeletionJobs">;
+    ownerKey: string;
+    scheduleContinuationWhenMore: boolean;
+    scheduleCleanupWhenComplete: boolean;
+  },
+) {
+  const job = await ctx.db.get(args.jobId);
+  if (!job || job.status !== "deleting") {
+    throw new Error("ACCOUNT_DELETION_JOB_NOT_DELETING");
+  }
+
+  const batch = await deleteOwnedDataBatch(ctx, args.ownerKey);
+  const deleted = addDeleteCounts(job.deleted, batch.deleted);
+  const batches = job.batches + 1;
+  const now = Date.now();
+
+  if (batch.hasMore) {
+    await ctx.db.patch(args.jobId, {
+      deleted,
+      batches,
+      updatedAt: now,
+    });
+    if (args.scheduleContinuationWhenMore) {
+      await ctx.scheduler.runAfter(0, internal.account.continueAccountDeletion, {
+        ownerKey: args.ownerKey,
+      });
+    }
+    return {
+      kind: "batch_done" as const,
+      deleted,
+      batches,
+      hasMore: true,
+      jobStatus: "deleting" as const,
+    };
+  }
+
+  await ctx.db.patch(args.jobId, {
+    status: "cleanup_pending",
+    deleted,
+    batches,
+    updatedAt: now,
+  });
+
+  if (args.scheduleCleanupWhenComplete) {
+    await ctx.scheduler.runAfter(0, internal.account.runAccountDeletionCleanup, {
+      ownerKey: args.ownerKey,
+    });
+    return {
+      kind: "cleanup_scheduled" as const,
+      deleted,
+      batches,
+      hasMore: false,
+    };
+  }
+
+  return {
+    kind: "ready_for_inline_cleanup" as const,
+    deleted,
+    batches,
+    hasMore: false,
+  };
+}
+
+async function deleteOwnedDataBatch(ctx: MutationCtx, ownerKey: string): Promise<DeleteBatchResult> {
+  const profiles = await deleteProfiles(ctx, ownerKey);
+  const entries = await deleteEntries(ctx, ownerKey);
+  const commandHistory = await deleteCommandHistory(ctx, ownerKey);
+  const appleSignInCredentials = await deleteAppleCredentials(ctx, ownerKey);
+  const usageEvents = await deleteUsageEvents(ctx, ownerKey);
+
+  return {
+    deleted: {
+      profiles: profiles.deleted,
+      entries: entries.deleted,
+      commandHistory: commandHistory.deleted,
+      appleSignInCredentials: appleSignInCredentials.deleted,
+      usageEvents: usageEvents.deleted,
+    },
+    hasMore:
+      profiles.hasMore
+      || entries.hasMore
+      || commandHistory.hasMore
+      || appleSignInCredentials.hasMore
+      || usageEvents.hasMore,
+  };
+}
 
 async function deleteProfiles(ctx: MutationCtx, ownerKey: string) {
   const rows = await ctx.db
@@ -116,3 +383,50 @@ async function deleteRows(ctx: MutationCtx, rows: Array<{ _id: Parameters<Mutati
     hasMore: rows.length > DELETE_BATCH_LIMIT,
   };
 }
+
+async function getDeletionJob(ctx: MutationCtx, ownerKey: string) {
+  return await ctx.db
+    .query("accountDeletionJobs")
+    .withIndex("by_ownerKey", (q) => q.eq("ownerKey", ownerKey))
+    .unique();
+}
+
+function isActiveDeletionJob(status: DeletionJobDoc["status"]) {
+  return status === "deleting"
+    || status === "cleanup_pending"
+    || status === "cleanup_running";
+}
+
+function emptyDeleteCounts(): DeleteCounts {
+  return {
+    profiles: 0,
+    entries: 0,
+    commandHistory: 0,
+    appleSignInCredentials: 0,
+    usageEvents: 0,
+  };
+}
+
+function addDeleteCounts(total: DeleteCounts, batch: DeleteCounts): DeleteCounts {
+  return {
+    profiles: total.profiles + batch.profiles,
+    entries: total.entries + batch.entries,
+    commandHistory: total.commandHistory + batch.commandHistory,
+    appleSignInCredentials: total.appleSignInCredentials + batch.appleSignInCredentials,
+    usageEvents: total.usageEvents + batch.usageEvents,
+  };
+}
+
+export function deletionJobToDeletedResponse(job: DeletionJobDoc) {
+  if (job.status !== "deleted" || !job.cleanup) {
+    throw new Error("ACCOUNT_DELETION_JOB_NOT_FINALIZED");
+  }
+  return {
+    status: "deleted" as const,
+    deleted: job.deleted,
+    batches: job.batches,
+    cleanup: job.cleanup,
+  };
+}
+
+export type AccountDeletionCleanupResult = AccountDeletionCleanup;
