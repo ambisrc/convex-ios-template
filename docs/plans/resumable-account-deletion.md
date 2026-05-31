@@ -73,7 +73,7 @@ app-owned Convex rows are deleted.
   `ownerKey`, to persist deletion status, deleted counts, cleanup status, and
   timestamps.
 - Model job status as a validator-backed union. Suggested statuses:
-  `deleting`, `cleanup_pending`, `cleanup_running`, `deleted`, `failed`.
+  `deleting`, `cleanup_pending`, `cleanup_running`, `deleted`.
 - Keep vendor cleanup actions in `convex/posthog.ts` and `convex/sentry.ts`.
   Add an internal action only if orchestration needs to call vendor cleanup and
   then record completion.
@@ -96,7 +96,8 @@ app-owned Convex rows are deleted.
 6. When a continuation finds no owned rows remain, it marks cleanup pending and
    schedules an internal cleanup action.
 7. The cleanup action calls the existing PostHog and Sentry internal actions,
-   then records cleanup completion through an internal mutation.
+   records vendor failures in the cleanup result, then records cleanup
+   completion through an internal mutation.
 8. `commands:deleteAccount` maps the job state to the public response union.
 
 ## TDD Plan

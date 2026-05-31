@@ -68,6 +68,26 @@
         },
         "batches": 20,
         "jobStatus": "deleting"
+      },
+      "cleanupFailed": {
+        "status": "deleted",
+        "deleted": {
+          "profiles": 0,
+          "entries": 1000,
+          "commandHistory": 1000,
+          "appleSignInCredentials": 0,
+          "usageEvents": 1000
+        },
+        "batches": 21,
+        "cleanup": {
+          "posthog": {
+            "status": "failed",
+            "reason": "POSTHOG_DELETE_FAILED_500"
+          },
+          "sentry": {
+            "status": "reported"
+          }
+        }
       }
     }
   },

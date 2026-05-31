@@ -80,7 +80,9 @@ shapes, response status values, or read-list response fields.
 more rows remain than fit in the synchronous action budget, Convex schedules
 continuation mutations with `ctx.scheduler.runAfter(0, ...)` until app-owned
 rows are gone. PostHog and Sentry cleanup run once after deletion completes.
-Missing PostHog or Sentry configuration remains a skip state.
+Missing PostHog or Sentry configuration remains a skip state. Vendor cleanup
+request failures are stored in the final cleanup result instead of blocking
+account deletion completion.
 
 PostHog cleanup uses the configured deletion request API. Sentry cleanup records
 a best-effort account-cleanup report for project operators; it does not claim

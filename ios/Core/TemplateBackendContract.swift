@@ -90,6 +90,12 @@ enum TemplateDeleteAccountResult: Decodable, Equatable {
 
     struct CleanupStatus: Decodable, Equatable {
         let status: String
+        let reason: String?
+
+        init(status: String, reason: String? = nil) {
+            self.status = status
+            self.reason = reason
+        }
     }
 
     struct Cleanup: Decodable, Equatable {

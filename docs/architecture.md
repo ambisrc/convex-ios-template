@@ -131,6 +131,8 @@ Stable contract:
 - PostHog cleanup can request person deletion when configured.
 - Sentry cleanup records a best-effort operator report and does not claim user
   deletion.
+- Vendor cleanup failures are recorded in the final cleanup result so account
+  deletion does not remain stuck after owned app data is removed.
 
 Clone-owned replacement points:
 

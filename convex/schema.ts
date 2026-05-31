@@ -52,7 +52,6 @@ export default defineSchema({
       v.literal("cleanup_pending"),
       v.literal("cleanup_running"),
       v.literal("deleted"),
-      v.literal("failed"),
     ),
     deleted: v.object({
       profiles: v.number(),
@@ -66,10 +65,12 @@ export default defineSchema({
       posthog: v.union(
         v.object({ status: v.literal("skipped"), reason: v.literal("missing_config") }),
         v.object({ status: v.literal("requested") }),
+        v.object({ status: v.literal("failed"), reason: v.string() }),
       ),
       sentry: v.union(
         v.object({ status: v.literal("skipped"), reason: v.literal("missing_config") }),
         v.object({ status: v.literal("reported") }),
+        v.object({ status: v.literal("failed"), reason: v.string() }),
       ),
     })),
     createdAt: v.number(),

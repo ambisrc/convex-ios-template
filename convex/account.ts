@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
-import type { MutationCtx } from "./_generated/server";
+import type { ActionCtx, MutationCtx } from "./_generated/server";
 import { internalAction, internalMutation } from "./_generated/server";
 
 const DELETE_BATCH_LIMIT = 50;
@@ -21,11 +21,13 @@ type DeleteBatchResult = {
 
 type CleanupResult =
   | { status: "skipped"; reason: "missing_config" }
-  | { status: "requested" };
+  | { status: "requested" }
+  | { status: "failed"; reason: string };
 
 type SentryCleanupResult =
   | { status: "skipped"; reason: "missing_config" }
-  | { status: "reported" };
+  | { status: "reported" }
+  | { status: "failed"; reason: string };
 
 type AccountDeletionCleanup = {
   posthog: CleanupResult;
@@ -196,10 +198,12 @@ export const finalizeAccountDeletion = internalMutation({
       posthog: v.union(
         v.object({ status: v.literal("skipped"), reason: v.literal("missing_config") }),
         v.object({ status: v.literal("requested") }),
+        v.object({ status: v.literal("failed"), reason: v.string() }),
       ),
       sentry: v.union(
         v.object({ status: v.literal("skipped"), reason: v.literal("missing_config") }),
         v.object({ status: v.literal("reported") }),
+        v.object({ status: v.literal("failed"), reason: v.string() }),
       ),
     }),
   },
@@ -229,19 +233,47 @@ export const runAccountDeletionCleanup = internalAction({
       return;
     }
 
-    const posthog: CleanupResult = await ctx.runAction(internal.posthog.deletePerson, {
-      ownerKey: args.ownerKey,
-    });
-    const sentry: SentryCleanupResult = await ctx.runAction(internal.sentry.recordAccountCleanup, {
-      ownerKey: args.ownerKey,
-    });
+    const cleanup = await runAccountDeletionVendorCleanup(ctx, args.ownerKey);
 
     await ctx.runMutation(internal.account.finalizeAccountDeletion, {
       ownerKey: args.ownerKey,
-      cleanup: { posthog, sentry },
+      cleanup,
     });
   },
 });
+
+export async function runAccountDeletionVendorCleanup(
+  ctx: Pick<ActionCtx, "runAction">,
+  ownerKey: string,
+): Promise<AccountDeletionCleanup> {
+  const posthog: CleanupResult = await runCleanupStep(async () => {
+    const result: CleanupResult = await ctx.runAction(internal.posthog.deletePerson, { ownerKey });
+    return result;
+  });
+  const sentry: SentryCleanupResult = await runCleanupStep(async () => {
+    const result: SentryCleanupResult = await ctx.runAction(internal.sentry.recordAccountCleanup, { ownerKey });
+    return result;
+  });
+
+  return { posthog, sentry };
+}
+
+async function runCleanupStep<T extends CleanupResult | SentryCleanupResult>(
+  cleanup: () => Promise<T>,
+): Promise<T | { status: "failed"; reason: string }> {
+  try {
+    return await cleanup();
+  } catch (error) {
+    return { status: "failed", reason: cleanupErrorReason(error) };
+  }
+}
+
+function cleanupErrorReason(error: unknown) {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+  return "UNKNOWN_CLEANUP_ERROR";
+}
 
 async function runDeletionBatch(
   ctx: MutationCtx,

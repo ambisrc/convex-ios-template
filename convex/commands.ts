@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { action } from "./_generated/server";
-import { deletionJobToDeletedResponse } from "./account";
+import { deletionJobToDeletedResponse, runAccountDeletionVendorCleanup } from "./account";
 import { requireOwnerKey } from "./lib/auth";
 import { commandSourceValidator, type AssistantOperation, type CommandSource } from "./lib/operations";
 import { interpretCommand } from "./lib/commandInterpreter";
@@ -34,11 +34,13 @@ type DeleteCounts = {
 
 type CleanupResult =
   | { status: "skipped"; reason: "missing_config" }
-  | { status: "requested" };
+  | { status: "requested" }
+  | { status: "failed"; reason: string };
 
 type SentryCleanupResult =
   | { status: "skipped"; reason: "missing_config" }
-  | { status: "reported" };
+  | { status: "reported" }
+  | { status: "failed"; reason: string };
 
 type DeleteAccountDeletedResponse = {
   status: "deleted";
@@ -139,17 +141,16 @@ export const deleteAccount = action({
         };
       }
       if (result.kind === "ready_for_inline_cleanup") {
-        const posthog: CleanupResult = await ctx.runAction(internal.posthog.deletePerson, { ownerKey });
-        const sentry: SentryCleanupResult = await ctx.runAction(internal.sentry.recordAccountCleanup, { ownerKey });
+        const cleanup = await runAccountDeletionVendorCleanup(ctx, ownerKey);
         await ctx.runMutation(internal.account.finalizeAccountDeletion, {
           ownerKey,
-          cleanup: { posthog, sentry },
+          cleanup,
         });
         return {
           status: "deleted",
           deleted: result.deleted,
           batches: result.batches,
-          cleanup: { posthog, sentry },
+          cleanup,
         };
       }
 

@@ -186,6 +186,47 @@ describe("starter account lifecycle", () => {
     await expect(t.query(api.entries.listEntries, {})).resolves.toEqual([]);
   });
 
+  it("finalizes scheduled deletion when vendor cleanup fails", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("process", {
+      env: {
+        POSTHOG_HOST: "https://eu.posthog.com/",
+        POSTHOG_PROJECT_ID: "12345",
+        POSTHOG_PERSONAL_API_KEY: "test-posthog-key",
+        SENTRY_AUTH_TOKEN: "test-sentry-token",
+        SENTRY_ORG_SLUG: "example-org",
+        SENTRY_PROJECT_SLUG: "voice-agent",
+      },
+    });
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 500 }))
+      .mockResolvedValueOnce(new Response(null, { status: 202 }));
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const t = convexTest(schema, modules).withIdentity(identity);
+    await seedLargeOwnedEntryVolume(t, identity.tokenIdentifier, LARGE_ACCOUNT_ROW_COUNT);
+
+    await t.action(api.commands.deleteAccount, {});
+    await t.finishAllScheduledFunctions(() => {
+      vi.runAllTimers();
+    });
+    vi.useRealTimers();
+
+    const jobs = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("accountDeletionJobs")
+        .withIndex("by_ownerKey", (q) => q.eq("ownerKey", identity.tokenIdentifier))
+        .collect();
+    });
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0]?.status).toBe("deleted");
+    expect(jobs[0]?.cleanup).toMatchObject({
+      posthog: { status: "failed", reason: "POSTHOG_DELETE_FAILED_500" },
+      sentry: { status: "reported" },
+    });
+  });
+
   it("is idempotent while deletion is in progress and after completion", async () => {
     vi.useFakeTimers();
     const t = convexTest(schema, modules).withIdentity(identity);

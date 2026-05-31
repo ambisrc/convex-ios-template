@@ -123,6 +123,22 @@ final class TemplateConvexCommandRequestTests: XCTestCase {
         XCTAssertEqual(batches, 20)
         XCTAssertEqual(jobStatus, .deleting)
     }
+
+    func testDeleteAccountResponseDecodesCleanupFailedFixture() throws {
+        let json = try PublicActionContractFixture.load()
+            .requiredAction(TemplateBackendEndpoints.deleteAccount)
+            .namedResponseData("cleanupFailed")
+
+        let result = try JSONDecoder().decode(TemplateDeleteAccountResult.self, from: json)
+
+        guard case let .deleted(_, _, cleanup) = result else {
+            return XCTFail("Expected deleted status")
+        }
+        XCTAssertEqual(cleanup.posthog.status, "failed")
+        XCTAssertEqual(cleanup.posthog.reason, "POSTHOG_DELETE_FAILED_500")
+        XCTAssertEqual(cleanup.sentry.status, "reported")
+        XCTAssertNil(cleanup.sentry.reason)
+    }
 }
 
 private struct PublicActionContractFixture: Decodable {
@@ -154,6 +170,7 @@ private struct PublicActionContract: Decodable {
     let success: JSONValue
     let configurationMissing: JSONValue?
     let deletionInProgress: JSONValue?
+    let cleanupFailed: JSONValue?
 
     func successData() throws -> Data {
         try JSONEncoder().encode(success)
@@ -167,6 +184,8 @@ private struct PublicActionContract: Decodable {
         switch name {
         case "deletionInProgress":
             return try JSONEncoder().encode(XCTUnwrap(deletionInProgress))
+        case "cleanupFailed":
+            return try JSONEncoder().encode(XCTUnwrap(cleanupFailed))
         default:
             throw XCTSkip("Unsupported named response: \(name)")
         }
