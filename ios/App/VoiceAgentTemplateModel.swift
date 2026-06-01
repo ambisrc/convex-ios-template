@@ -118,6 +118,7 @@ final class VoiceAgentTemplateModel: ObservableObject {
             case .deletionInProgress:
                 clearLocalSession()
                 feedbackMessage = "Account deletion is in progress. Your data will be removed shortly."
+                analytics.capture("account_deleted", properties: ["status": "deletion_in_progress"])
             }
         } catch {
             feedbackMessage = displayMessage(for: error)

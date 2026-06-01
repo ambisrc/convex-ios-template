@@ -173,6 +173,7 @@ final class VoiceAgentTemplateModelTests: XCTestCase {
     func testDeleteAccountClearsWritableLocalStateWhenDeletionIsInProgress() async {
         let sentryScope = TemplateSentryUserScope()
         sentryScope.bind(ownerKey: "test|owner")
+        let analytics = AnalyticsSpy()
         let commandService = StubCommandService()
         commandService.deleteAccountResult = .deletionInProgress(
             deleted: .init(
@@ -189,7 +190,7 @@ final class VoiceAgentTemplateModelTests: XCTestCase {
             sessionService: StubSessionService(result: .success(TemplateSession(ownerKey: "test|owner"))),
             commandService: commandService,
             voiceCapture: StubVoiceCapture(),
-            analytics: TemplateProductAnalytics(configuration: nil),
+            analytics: analytics.tracker,
             sentryScope: sentryScope,
             launchArguments: []
         )
@@ -205,19 +206,23 @@ final class VoiceAgentTemplateModelTests: XCTestCase {
         XCTAssertEqual(model.commandText, "")
         XCTAssertNil(sentryScope.ownerKey)
         XCTAssertEqual(model.feedbackMessage?.isEmpty, false)
+        XCTAssertEqual(analytics.events, ["account_deleted"])
+        XCTAssertEqual(analytics.properties.first?["status"], "deletion_in_progress")
     }
 }
 
 private final class AnalyticsSpy {
     private(set) var events: [String] = []
+    private(set) var properties: [[String: String]] = []
 
     lazy var tracker = TemplateProductAnalytics(
         configuration: TemplatePostHogConfiguration(
             apiKey: "ph_test",
             host: URL(string: "https://app.posthog.com")!
         )
-    ) { [weak self] event, _ in
+    ) { [weak self] event, properties in
         self?.events.append(event)
+        self?.properties.append(properties)
     }
 }
 
