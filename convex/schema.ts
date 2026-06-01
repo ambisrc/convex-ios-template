@@ -1,5 +1,10 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import {
+  accountDeletionCleanupValidator,
+  accountDeletionJobStatusValidator,
+  deleteCountsValidator,
+} from "./lib/accountDeletionContract";
 
 export default defineSchema({
   profiles: defineTable({
@@ -47,32 +52,10 @@ export default defineSchema({
 
   accountDeletionJobs: defineTable({
     ownerKey: v.string(),
-    status: v.union(
-      v.literal("deleting"),
-      v.literal("cleanup_pending"),
-      v.literal("cleanup_running"),
-      v.literal("deleted"),
-    ),
-    deleted: v.object({
-      profiles: v.number(),
-      entries: v.number(),
-      commandHistory: v.number(),
-      appleSignInCredentials: v.number(),
-      usageEvents: v.number(),
-    }),
+    status: accountDeletionJobStatusValidator,
+    deleted: deleteCountsValidator,
     batches: v.number(),
-    cleanup: v.optional(v.object({
-      posthog: v.union(
-        v.object({ status: v.literal("skipped"), reason: v.literal("missing_config") }),
-        v.object({ status: v.literal("requested") }),
-        v.object({ status: v.literal("failed"), reason: v.string() }),
-      ),
-      sentry: v.union(
-        v.object({ status: v.literal("skipped"), reason: v.literal("missing_config") }),
-        v.object({ status: v.literal("reported") }),
-        v.object({ status: v.literal("failed"), reason: v.string() }),
-      ),
-    })),
+    cleanup: v.optional(accountDeletionCleanupValidator),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_ownerKey", ["ownerKey"]),

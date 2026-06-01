@@ -111,17 +111,26 @@ final class VoiceAgentTemplateModel: ObservableObject {
 
     func deleteAccount() async {
         do {
-            _ = try await commandService.deleteAccount()
-            entries.removeAll()
-            commandText = ""
-            isSignedIn = false
-            isSettingsPresented = false
-            feedbackMessage = nil
-            sentryScope.clear()
-            analytics.capture("account_deleted", properties: [:])
+            switch try await commandService.deleteAccount() {
+            case .deleted:
+                clearLocalSession()
+                analytics.capture("account_deleted", properties: [:])
+            case .deletionInProgress:
+                clearLocalSession()
+                feedbackMessage = "Account deletion is in progress. Your data will be removed shortly."
+            }
         } catch {
             feedbackMessage = displayMessage(for: error)
         }
+    }
+
+    private func clearLocalSession() {
+        entries.removeAll()
+        commandText = ""
+        isSignedIn = false
+        isSettingsPresented = false
+        feedbackMessage = nil
+        sentryScope.clear()
     }
 
     private func apply(_ result: TemplateCommandResult) {
