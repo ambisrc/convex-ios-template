@@ -31,22 +31,27 @@ export type PosthogCleanupResult = Infer<typeof posthogCleanupResultValidator>;
 export type SentryCleanupResult = Infer<typeof sentryCleanupResultValidator>;
 export type AccountDeletionCleanup = Infer<typeof accountDeletionCleanupValidator>;
 
+const deletingStatusValidator = v.literal("deleting");
+const cleanupPendingStatusValidator = v.literal("cleanup_pending");
+const cleanupRunningStatusValidator = v.literal("cleanup_running");
+const deletedStatusValidator = v.literal("deleted");
+
 export const accountDeletionJobStatusValidator = v.union(
-  v.literal("deleting"),
-  v.literal("cleanup_pending"),
-  v.literal("cleanup_running"),
-  v.literal("deleted"),
+  deletingStatusValidator,
+  cleanupPendingStatusValidator,
+  cleanupRunningStatusValidator,
+  deletedStatusValidator,
 );
 
 export type AccountDeletionJobStatus = Infer<typeof accountDeletionJobStatusValidator>;
 
 export const activeDeletionJobStatusValidator = v.union(
-  v.literal("deleting"),
-  v.literal("cleanup_pending"),
-  v.literal("cleanup_running"),
+  deletingStatusValidator,
+  cleanupPendingStatusValidator,
+  cleanupRunningStatusValidator,
 );
 
-export type ActiveDeletionJobStatus = Infer<typeof activeDeletionJobStatusValidator>;
+export type ActiveDeletionJobStatus = Exclude<AccountDeletionJobStatus, "deleted">;
 
 export type DeleteAccountDeletedResponse = {
   status: "deleted";

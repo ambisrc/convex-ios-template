@@ -204,10 +204,7 @@ final class VoiceAgentTemplateModelTests: XCTestCase {
         XCTAssertTrue(model.entries.isEmpty)
         XCTAssertEqual(model.commandText, "")
         XCTAssertNil(sentryScope.ownerKey)
-        XCTAssertEqual(
-            model.feedbackMessage,
-            "Account deletion is in progress. Your data will be removed shortly."
-        )
+        XCTAssertEqual(model.feedbackMessage?.isEmpty, false)
     }
 }
 

@@ -1,6 +1,6 @@
 # AMB-225 Review Fixes
 
-Status: In Progress
+Status: Implementation Complete (awaiting PR review)
 Linear issue: AMB-225
 Created: 2026-05-31
 Source: review findings on the account deletion consolidation workspace

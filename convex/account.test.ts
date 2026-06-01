@@ -328,7 +328,7 @@ describe("starter account lifecycle", () => {
     });
 
     const deletion = t.action(api.commands.deleteAccount, {});
-    expect(fetchOrder).toEqual([]);
+    await vi.waitFor(() => expect(fetchOrder).toEqual(["posthog"]));
     releasePosthog?.();
     const response = await deletion;
 

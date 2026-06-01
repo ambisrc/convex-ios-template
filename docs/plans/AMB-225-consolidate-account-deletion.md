@@ -1,9 +1,13 @@
 # Consolidate Account Deletion Into account.ts
 
-Status: Planned
+Status: Planning Artifact
 Linear issue: [AMB-225](https://linear.app/ambimake/issue/AMB-225/consolidate-account-deletion-validators-into-account-module)
 Created: 2026-05-31
 Predecessor: `docs/plans/resumable-account-deletion.md` (behavior shipped; this is structural cleanup)
+
+Note: this file records the original implementation plan. Completion evidence
+and review-fix delivery status are tracked in
+`docs/plans/AMB-225-review-fixes.md`.
 
 ## Goal
 
@@ -31,7 +35,7 @@ states cannot drift across files.
 ## Ship Now
 
 - Introduce one shared validator module for the account-deletion domain
-  (recommended: `convex/lib/accountDeletion.ts`, imported by `account.ts` and
+  (recommended: `convex/lib/accountDeletionContract.ts`, imported by `account.ts` and
   `schema.ts`; re-export public types from `account.ts` for callers).
 - Define validators once for:
   - `deleteCounts` (per-table deleted row counts);
@@ -88,7 +92,7 @@ commands:deleteAccount (public action)
             ├─ runAccountDeletionVendorCleanup (existing)
             └─ map job/batch results → deleteAccountResponseValidator
 
-convex/lib/accountDeletion.ts
+convex/lib/accountDeletionContract.ts
   └─ exported validators + inferred types
 
 convex/schema.ts
@@ -115,7 +119,7 @@ convex/posthog.ts / convex/sentry.ts
   `commands.ts`; lifecycle writes stay in `account.ts`.
 - Mirror the `convex/lib/operations.ts` pattern: validators in `lib/`, domain
   orchestration in the owning module.
-- Prefer importing validators into `schema.ts` from `lib/accountDeletion.ts`
+- Prefer importing validators into `schema.ts` from `lib/accountDeletionContract.ts`
   rather than from `account.ts` to avoid any risk of schema ↔ handler import
   cycles.
 - Export `DeleteAccountResponse` and `deletionJobToDeletedResponse` from
@@ -135,7 +139,7 @@ convex/posthog.ts / convex/sentry.ts
 
 Suggested slice order:
 
-1. Add `convex/lib/accountDeletion.ts` with validators; switch `schema.ts` —
+1. Add `convex/lib/accountDeletionContract.ts` with validators; switch `schema.ts` —
    run tests (schema-only change should be behavior-neutral).
 2. Replace inline cleanup args in `finalizeAccountDeletion`; run tests.
 3. Move orchestration from `commands.ts` to `account.ts`; slim public action;
@@ -170,7 +174,7 @@ Contract (should be unchanged):
 ## Documentation Impact
 
 - Light touch `docs/architecture.md` Account Deletion: note shared validators
-  live under `convex/lib/accountDeletion.ts` and orchestration is account-owned.
+  live under `convex/lib/accountDeletionContract.ts` and orchestration is account-owned.
 - No `docs/deployment.md` change unless env or operator steps change (they should
   not).
 
@@ -180,7 +184,7 @@ Not required (backend-only refactor, no UI).
 
 ## Safe Concurrency
 
-- Single backend worker owns `convex/lib/accountDeletion.ts`, `convex/account.ts`,
+- Single backend worker owns `convex/lib/accountDeletionContract.ts`, `convex/account.ts`,
   `convex/commands.ts`, `convex/schema.ts`, and `convex/account.test.ts`.
 - Do not split `schema.ts` and `account.ts` across parallel agents.
 - Documentation node can run after backend gates pass.
@@ -195,7 +199,7 @@ Not required (backend-only refactor, no UI).
 - owner_type: `agent`
 - executor: `execute-work`
 - planned_write_scope:
-  - `convex/lib/accountDeletion.ts`
+  - `convex/lib/accountDeletionContract.ts`
   - `convex/schema.ts`
   - `convex/account.ts` (import swaps only)
 - depends_on: `[]`
