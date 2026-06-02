@@ -79,15 +79,41 @@ describe("starter command execution", () => {
     ).rejects.toThrow("AUTH_REQUIRED");
   });
 
-  it("rejects unsupported commands without partial writes", async () => {
+  it("applies plain non-empty text as a starter entry", async () => {
+    const t = convexTest(schema, modules).withIdentity(identity);
+
+    const response = await t.action(api.commands.submitCommand, {
+      text: "please reorganize everything",
+      source: "typed",
+    });
+
+    expect(response).toMatchObject({
+      status: "applied",
+      summary: "Created entry: please reorganize everything.",
+      operations: [
+        {
+          type: "create_entry",
+          body: "please reorganize everything",
+        },
+      ],
+    });
+    expect(response.entries[0]).toMatchObject({
+      body: "please reorganize everything",
+      source: "typed",
+    });
+    expect(response.entries[0]?.id).toEqual(expect.any(String));
+    await expect(t.query(api.entries.listEntries, {})).resolves.toEqual(response.entries);
+  });
+
+  it("rejects empty commands without partial writes", async () => {
     const t = convexTest(schema, modules).withIdentity(identity);
 
     await expect(
       t.action(api.commands.submitCommand, {
-        text: "please reorganize everything",
+        text: "   ",
         source: "typed",
       }),
-    ).rejects.toThrow("UNSUPPORTED_COMMAND");
+    ).rejects.toThrow("EMPTY_COMMAND");
 
     await expect(t.query(api.entries.listEntries, {})).resolves.toEqual([]);
   });
