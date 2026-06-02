@@ -19,7 +19,7 @@
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Voice Agent records short voice commands so the backend can transcribe and apply them.</string>
 	<key>CONVEX_DEPLOYMENT_URL</key>
-	<string>https://example.convex.cloud</string>
+	<string>$(CONVEX_DEPLOYMENT_URL)</string>
 	<key>POSTHOG_API_KEY</key>
 	<string></string>
 	<key>POSTHOG_HOST</key>
