@@ -461,7 +461,7 @@ function addDeleteCounts(total: DeleteCounts, batch: DeleteCounts): DeleteCounts
   return Object.fromEntries(
     accountDeletionOwnedTableNames.map((tableName) => [
       tableName,
-      total[tableName] + batch[tableName],
+      (total[tableName] ?? 0) + (batch[tableName] ?? 0),
     ]),
   ) as DeleteCounts;
 }

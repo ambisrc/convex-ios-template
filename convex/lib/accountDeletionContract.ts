@@ -1,12 +1,12 @@
 import { v, type Infer } from "convex/values";
 
-export const accountDeletionOwnedTableNames = [
+export const accountDeletionOwnedTableNames = Object.freeze([
   "profiles",
   "entries",
   "commandHistory",
   "appleSignInCredentials",
   "usageEvents",
-] as const;
+] as const);
 
 export type AccountDeletionOwnedTableName = typeof accountDeletionOwnedTableNames[number];
 

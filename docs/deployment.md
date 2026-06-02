@@ -105,7 +105,8 @@ the clone:
 
 1. Add the table-specific delete helper and include it in
    `deleteOwnedDataBatch` in `convex/account.ts`.
-2. Add the table count key to `accountDeletionOwnedTableNames` in
+2. Add the table count key to `accountDeletionOwnedTableNames` and a matching
+   `v.number()` entry to `deleteCountValidators` in
    `convex/lib/accountDeletionContract.ts`.
 3. Add the key to every `commands:deleteAccount.deleted` object in
    `tests/fixtures/public-actions.json`.

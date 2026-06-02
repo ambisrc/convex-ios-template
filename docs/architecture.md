@@ -144,7 +144,8 @@ When a clone adds a new owner-owned Convex table, update the account deletion
 surface in one change:
 
 - add the table deletion query to `convex/account.ts`;
-- add its count key to `accountDeletionOwnedTableNames` in
+- add its count key to `accountDeletionOwnedTableNames` and a matching
+  `v.number()` entry to `deleteCountValidators` in
   `convex/lib/accountDeletionContract.ts`;
 - update `tests/fixtures/public-actions.json` delete-account responses;
 - update `TemplateDeleteAccountResult.DeletedCounts` in
