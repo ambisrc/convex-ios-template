@@ -91,7 +91,7 @@ Prototype-specific:
   - `entries:updateEntry` must derive ownership server-side and apply writes through `convex/lib/apply.ts`.
   - Extend the shared fixture format to include mutations.
 - `verification`:
-  - passed: `npx vitest run convex` (5 files, 22 tests; existing convex-test scheduled-function stderr in `account.test.ts`, exit 0)
+  - passed: `npx vitest run convex` (5 files, 23 tests; existing convex-test scheduled-function stderr in `account.test.ts`, exit 0)
   - passed: `npx tsc -p convex/tsconfig.json`
   - passed: XcodeBuildMCP `test_sim` for focused contract/model tests (30 tests, 0 failures)
   - passed: XcodeBuildMCP `test_sim` full suite on iPhone 16 simulator (45 tests, 0 failures)

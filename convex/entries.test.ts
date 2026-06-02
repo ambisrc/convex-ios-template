@@ -61,6 +61,24 @@ describe("entries", () => {
     await expect(t.query(api.entries.listEntries, {})).resolves.toEqual([updated]);
   });
 
+  it("rejects an empty updated entry body", async () => {
+    const t = convexTest(schema, modules).withIdentity(identity);
+    await t.action(api.commands.submitCommand, {
+      text: "Create a note saying original",
+      source: "typed",
+    });
+    const [entry] = await t.query(api.entries.listEntries, {});
+
+    await expect(
+      t.mutation(api.entries.updateEntry, {
+        id: entry.id,
+        body: "   ",
+      }),
+    ).rejects.toThrow("EMPTY_ENTRY_BODY");
+
+    await expect(t.query(api.entries.listEntries, {})).resolves.toEqual([entry]);
+  });
+
   it("does not allow another owner to update an entry", async () => {
     const base = convexTest(schema, modules);
     const t = base.withIdentity(identity);
