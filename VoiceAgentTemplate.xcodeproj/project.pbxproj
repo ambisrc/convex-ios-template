@@ -9,7 +9,14 @@
 /* Begin PBXBuildFile section */
 		01411A6DA08908982F58B373 /* VoiceAgentRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 751EE85CA8A8D4AFC5F51313 /* VoiceAgentRootView.swift */; };
 		02CFD966EF95D97800D7B7A9 /* TemplateSentryUserScopeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8273B897F04C85B9FAA00E08 /* TemplateSentryUserScopeTests.swift */; };
+		0A1B2C3D4E5F60718293B001 /* TemplateConvexArgumentDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F70819293B001 /* TemplateConvexArgumentDecoder.swift */; };
+		0A1B2C3D4E5F60718293B002 /* TemplateJWTIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F70819293B002 /* TemplateJWTIdentity.swift */; };
+		0A1B2C3D4E5F60718293B003 /* TemplateAppleSignInService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F70819293B003 /* TemplateAppleSignInService.swift */; };
+		0A1B2C3D4E5F60718293B004 /* TemplateAppleAuthProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F70819293B004 /* TemplateAppleAuthProvider.swift */; };
+		0A1B2C3D4E5F60718293B005 /* TemplateConvexLiveCaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F70819293B005 /* TemplateConvexLiveCaller.swift */; };
+		0A1B2C3D4E5F60718293B006 /* TemplateRuntimeServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F70819293B006 /* TemplateRuntimeServices.swift */; };
 		23440B06B52222B8046E9E95 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E97B1A116686037B0AD4FFC7 /* Foundation.framework */; };
+		2B3C4D5E6F70819293B00001 /* ConvexMobile in Frameworks */ = {isa = PBXBuildFile; productRef = 4D5E6F70819293B00000001 /* ConvexMobile */; };
 		242F77CF7B9899439AFA640B /* TemplateVoiceCaptureState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A9B8E84B8C0E43757A2D620 /* TemplateVoiceCaptureState.swift */; };
 		4193EA9E830DE98ABECF64AF /* CaptureBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7BD1E91AC505B2A3DA63524 /* CaptureBar.swift */; };
 		58E8C82D114D70D9C9C6BCF9 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2553EE079DA61F7F7F5C632 /* SettingsView.swift */; };
@@ -19,6 +26,7 @@
 		844274AE11AD9534A296003B /* TemplateServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E327381129D84860DA8E402 /* TemplateServices.swift */; };
 		867CDC53F8DD269FD8F0ADA8 /* TemplateProductAnalyticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6F4B14117806E9A52AA8A47 /* TemplateProductAnalyticsTests.swift */; };
 		86BC5593CB7FE5FABE41B26B /* TemplateConvexCommandRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 721FB09E1CB235CCDD439AFC /* TemplateConvexCommandRequest.swift */; };
+		8F8C9F9D7F3B49E3A50B7C41 /* TemplateRuntimeAuthTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C387DF8559F4E9099F5401B /* TemplateRuntimeAuthTests.swift */; };
 		A1B2C3D4E5F60718293A4B5C /* TemplateBackendContract.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F60718293A4B5C6D /* TemplateBackendContract.swift */; };
 		C3D4E5F60718293A4B5C6D7E /* TemplateBackendClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F60718293A4B5C6D7E8F /* TemplateBackendClient.swift */; };
 		E5F60718293A4B5C6D7E8F90 /* TemplateBackendClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F60718293A4B5C6D7E8F9012 /* TemplateBackendClientTests.swift */; };
@@ -46,6 +54,12 @@
 		052B3D5F64C14A3DA41F3B75 /* Config.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Config.xcconfig; path = ios/Config.xcconfig; sourceTree = "<group>"; };
 		067082FDED8496D9A210386C /* VoiceAgentTemplateModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VoiceAgentTemplateModelTests.swift; path = ios/Tests/VoiceAgentTemplateModelTests.swift; sourceTree = "<group>"; };
 		0A9B8E84B8C0E43757A2D620 /* TemplateVoiceCaptureState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TemplateVoiceCaptureState.swift; path = ios/Features/Capture/TemplateVoiceCaptureState.swift; sourceTree = "<group>"; };
+		1A2B3C4D5E6F70819293B001 /* TemplateConvexArgumentDecoder.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TemplateConvexArgumentDecoder.swift; path = ios/Core/TemplateConvexArgumentDecoder.swift; sourceTree = "<group>"; };
+		1A2B3C4D5E6F70819293B002 /* TemplateJWTIdentity.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TemplateJWTIdentity.swift; path = ios/Core/TemplateJWTIdentity.swift; sourceTree = "<group>"; };
+		1A2B3C4D5E6F70819293B003 /* TemplateAppleSignInService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TemplateAppleSignInService.swift; path = ios/Core/TemplateAppleSignInService.swift; sourceTree = "<group>"; };
+		1A2B3C4D5E6F70819293B004 /* TemplateAppleAuthProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TemplateAppleAuthProvider.swift; path = ios/Core/TemplateAppleAuthProvider.swift; sourceTree = "<group>"; };
+		1A2B3C4D5E6F70819293B005 /* TemplateConvexLiveCaller.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TemplateConvexLiveCaller.swift; path = ios/Core/TemplateConvexLiveCaller.swift; sourceTree = "<group>"; };
+		1A2B3C4D5E6F70819293B006 /* TemplateRuntimeServices.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TemplateRuntimeServices.swift; path = ios/Core/TemplateRuntimeServices.swift; sourceTree = "<group>"; };
 		3D0232184BEA0A9ACD700477 /* VoiceAgentTemplateTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VoiceAgentTemplateTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4C138FBA3148B07B2F58B794 /* VoiceAgentTemplateApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VoiceAgentTemplateApp.swift; path = ios/App/VoiceAgentTemplateApp.swift; sourceTree = "<group>"; };
 		4E327381129D84860DA8E402 /* TemplateServices.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TemplateServices.swift; path = ios/Core/TemplateServices.swift; sourceTree = "<group>"; };
@@ -59,6 +73,7 @@
 		8273B897F04C85B9FAA00E08 /* TemplateSentryUserScopeTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TemplateSentryUserScopeTests.swift; path = ios/Tests/TemplateSentryUserScopeTests.swift; sourceTree = "<group>"; };
 		89A1CD05E4E79FE22FA38908 /* TemplateConvexCommandRequestTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TemplateConvexCommandRequestTests.swift; path = ios/Tests/TemplateConvexCommandRequestTests.swift; sourceTree = "<group>"; };
 		90EFDB8C57F54B03B71187B1 /* TemplateVoiceCaptureStateTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TemplateVoiceCaptureStateTests.swift; path = ios/Tests/TemplateVoiceCaptureStateTests.swift; sourceTree = "<group>"; };
+		9C387DF8559F4E9099F5401B /* TemplateRuntimeAuthTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TemplateRuntimeAuthTests.swift; path = ios/Tests/TemplateRuntimeAuthTests.swift; sourceTree = "<group>"; };
 		9A9986AB3B3E3FC1793B3E13 /* TemplateProductAnalytics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TemplateProductAnalytics.swift; path = ios/Core/TemplateProductAnalytics.swift; sourceTree = "<group>"; };
 		9D4CA00B064C2483185DD971 /* VoiceAgentTemplate.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VoiceAgentTemplate.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B6F4B14117806E9A52AA8A47 /* TemplateProductAnalyticsTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TemplateProductAnalyticsTests.swift; path = ios/Tests/TemplateProductAnalyticsTests.swift; sourceTree = "<group>"; };
@@ -81,6 +96,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2B3C4D5E6F70819293B00001 /* ConvexMobile in Frameworks */,
 				F2C7218B7CC4427D4D8AF053 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -103,6 +119,12 @@
 				751EE85CA8A8D4AFC5F51313 /* VoiceAgentRootView.swift */,
 				4C138FBA3148B07B2F58B794 /* VoiceAgentTemplateApp.swift */,
 				5029041609E8268ABC1F888A /* VoiceAgentTemplateModel.swift */,
+				1A2B3C4D5E6F70819293B001 /* TemplateConvexArgumentDecoder.swift */,
+				1A2B3C4D5E6F70819293B002 /* TemplateJWTIdentity.swift */,
+				1A2B3C4D5E6F70819293B003 /* TemplateAppleSignInService.swift */,
+				1A2B3C4D5E6F70819293B004 /* TemplateAppleAuthProvider.swift */,
+				1A2B3C4D5E6F70819293B005 /* TemplateConvexLiveCaller.swift */,
+				1A2B3C4D5E6F70819293B006 /* TemplateRuntimeServices.swift */,
 				82110CE0C04E5DFD5450227C /* TemplateAccessibility.swift */,
 				721FB09E1CB235CCDD439AFC /* TemplateConvexCommandRequest.swift */,
 				B2C3D4E5F60718293A4B5C6D /* TemplateBackendContract.swift */,
@@ -117,6 +139,7 @@
 				04FE92330B8CA1BF0B47833F /* PrivacyInfo.xcprivacy */,
 				89A1CD05E4E79FE22FA38908 /* TemplateConvexCommandRequestTests.swift */,
 				F60718293A4B5C6D7E8F9012 /* TemplateBackendClientTests.swift */,
+				9C387DF8559F4E9099F5401B /* TemplateRuntimeAuthTests.swift */,
 				B6F4B14117806E9A52AA8A47 /* TemplateProductAnalyticsTests.swift */,
 				8273B897F04C85B9FAA00E08 /* TemplateSentryUserScopeTests.swift */,
 				90EFDB8C57F54B03B71187B1 /* TemplateVoiceCaptureStateTests.swift */,
@@ -184,6 +207,9 @@
 			dependencies = (
 			);
 			name = VoiceAgentTemplate;
+			packageProductDependencies = (
+				4D5E6F70819293B00000001 /* ConvexMobile */,
+			);
 			productName = VoiceAgentTemplate;
 			productReference = 9D4CA00B064C2483185DD971 /* VoiceAgentTemplate.app */;
 			productType = "com.apple.product-type.application";
@@ -207,6 +233,9 @@
 			);
 			mainGroup = 459CB00EF160BA0B35719315;
 			minimizedProjectReferenceProxies = 0;
+			packageReferences = (
+				3C4D5E6F70819293B00001 /* XCRemoteSwiftPackageReference "convex-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 094FE392C89FA84D95AB2CE3 /* Products */;
 			projectDirPath = "";
@@ -244,6 +273,12 @@
 				01411A6DA08908982F58B373 /* VoiceAgentRootView.swift in Sources */,
 				E080AFAB8EC6EBA51FF34FE7 /* VoiceAgentTemplateApp.swift in Sources */,
 				D86D47BC64B99CA4AB6A4783 /* VoiceAgentTemplateModel.swift in Sources */,
+				0A1B2C3D4E5F60718293B001 /* TemplateConvexArgumentDecoder.swift in Sources */,
+				0A1B2C3D4E5F60718293B002 /* TemplateJWTIdentity.swift in Sources */,
+				0A1B2C3D4E5F60718293B003 /* TemplateAppleSignInService.swift in Sources */,
+				0A1B2C3D4E5F60718293B004 /* TemplateAppleAuthProvider.swift in Sources */,
+				0A1B2C3D4E5F60718293B005 /* TemplateConvexLiveCaller.swift in Sources */,
+				0A1B2C3D4E5F60718293B006 /* TemplateRuntimeServices.swift in Sources */,
 				971ECEBCFC3771A82133B4A2 /* TemplateAccessibility.swift in Sources */,
 				86BC5593CB7FE5FABE41B26B /* TemplateConvexCommandRequest.swift in Sources */,
 				A1B2C3D4E5F60718293A4B5C /* TemplateBackendContract.swift in Sources */,
@@ -263,6 +298,7 @@
 			files = (
 				E374A7892F2478911687CEC7 /* TemplateConvexCommandRequestTests.swift in Sources */,
 				E5F60718293A4B5C6D7E8F90 /* TemplateBackendClientTests.swift in Sources */,
+				8F8C9F9D7F3B49E3A50B7C41 /* TemplateRuntimeAuthTests.swift in Sources */,
 				867CDC53F8DD269FD8F0ADA8 /* TemplateProductAnalyticsTests.swift in Sources */,
 				02CFD966EF95D97800D7B7A9 /* TemplateSentryUserScopeTests.swift in Sources */,
 				E29259DBFFB66F2314113DB2 /* TemplateVoiceCaptureStateTests.swift in Sources */,
@@ -524,6 +560,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		3C4D5E6F70819293B00001 /* XCRemoteSwiftPackageReference "convex-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/get-convex/convex-swift";
+			requirement = {
+				kind = upToNextMinorVersion;
+				minimumVersion = 0.8.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		4D5E6F70819293B00000001 /* ConvexMobile */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3C4D5E6F70819293B00001 /* XCRemoteSwiftPackageReference "convex-swift" */;
+			productName = ConvexMobile;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = AD84E1BE865630D860B9DEE4 /* Project object */;
 }

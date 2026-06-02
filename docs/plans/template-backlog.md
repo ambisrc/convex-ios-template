@@ -46,8 +46,8 @@ Prototype-specific:
 
 ### node.runtime-convex-auth
 
-- `status`: pending
-- `branch`: create from the latest template base branch after `node.ios-config` lands or rebase onto it if needed.
+- `status`: ready for PR
+- `branch`: `ambisrc/template-runtime-convex-auth`
 - `purpose`: add generic live Swift runtime wiring for Convex and Apple Sign In.
 - `files`:
   - `VoiceAgentTemplate.xcodeproj/project.pbxproj`
@@ -66,8 +66,8 @@ Prototype-specific:
   - Do not commit a development team ID.
   - Do not pretend Apple cached login can mint a fresh ID token unless proven.
 - `verification`:
-  - `xcodebuild -resolvePackageDependencies -project VoiceAgentTemplate.xcodeproj -scheme VoiceAgentTemplate`
-  - `xcodebuild test -project VoiceAgentTemplate.xcodeproj -scheme VoiceAgentTemplate -destination 'platform=iOS Simulator,OS=18.5,name=iPhone 16'`
+  - passed: `xcodebuild -resolvePackageDependencies -project VoiceAgentTemplate.xcodeproj -scheme VoiceAgentTemplate` (Convex Swift `0.8.1`)
+  - passed: `xcodebuild test -project VoiceAgentTemplate.xcodeproj -scheme VoiceAgentTemplate -destination 'platform=iOS Simulator,OS=18.5,name=iPhone 16'` (42 tests, 0 failures)
 
 ### node.entry-contracts
 
