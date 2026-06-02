@@ -59,7 +59,7 @@ final class VoiceAgentTemplateModelTests: XCTestCase {
         commandService.submitResult = TemplateCommandResult(
             summary: "Created entry: backend value.",
             operations: [.createEntry(body: "backend value")],
-            entries: [TemplateAppliedEntry(body: "backend value", source: .typed)]
+            entries: [TemplateAppliedEntry(id: "entry-typed", body: "backend value", source: .typed)]
         )
         let model = VoiceAgentTemplateModel(
             sessionService: StubSessionService(result: .success(TemplateSession(ownerKey: "test|owner"))),
@@ -78,6 +78,7 @@ final class VoiceAgentTemplateModelTests: XCTestCase {
         ])
         XCTAssertEqual(model.entries.map(\.body), ["backend value"])
         XCTAssertEqual(model.entries.map(\.source), [.typed])
+        XCTAssertEqual(model.entries.map(\.id), ["entry-typed"])
         XCTAssertEqual(model.commandText, "")
     }
 
@@ -87,7 +88,7 @@ final class VoiceAgentTemplateModelTests: XCTestCase {
         commandService.submitResult = TemplateCommandResult(
             summary: "Created entry: voice result.",
             operations: [.createEntry(body: "voice result")],
-            entries: [TemplateAppliedEntry(body: "voice result", source: .voice)]
+            entries: [TemplateAppliedEntry(id: "entry-voice", body: "voice result", source: .voice)]
         )
         let voiceCapture = StubVoiceCapture(audio: TemplateVoiceAudio(audioBase64: "dGVzdA==", mimeType: "audio/m4a"))
         let model = VoiceAgentTemplateModel(
@@ -109,6 +110,7 @@ final class VoiceAgentTemplateModelTests: XCTestCase {
         ])
         XCTAssertEqual(model.entries.map(\.body), ["voice result"])
         XCTAssertEqual(model.entries.map(\.source), [.voice])
+        XCTAssertEqual(model.entries.map(\.id), ["entry-voice"])
     }
 
     func testVoiceCommandUsesSpecificTypedFallbackReasonForCaptureFailures() async {
@@ -176,7 +178,7 @@ final class VoiceAgentTemplateModelTests: XCTestCase {
             launchArguments: []
         )
         model.isSignedIn = true
-        model.entries = [Entry(body: "Existing", source: .typed)]
+        model.entries = [Entry(id: "existing", body: "Existing", source: .typed)]
 
         await model.deleteAccount()
 
@@ -212,7 +214,7 @@ final class VoiceAgentTemplateModelTests: XCTestCase {
         )
         model.isSignedIn = true
         model.commandText = "draft command"
-        model.entries = [Entry(body: "Existing", source: .typed)]
+        model.entries = [Entry(id: "existing", body: "Existing", source: .typed)]
 
         await model.deleteAccount()
 
@@ -278,6 +280,10 @@ private final class StubCommandService: TemplateCommandServicing {
 
     func listEntries() async throws -> [TemplateListedEntry] {
         []
+    }
+
+    func updateEntry(id: String, body: String) async throws -> TemplateListedEntry {
+        TemplateListedEntry(id: id, body: body, source: .typed)
     }
 
     func deleteAccount() async throws -> TemplateDeleteAccountResult {

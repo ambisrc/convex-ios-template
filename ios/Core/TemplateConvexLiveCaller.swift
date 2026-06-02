@@ -23,6 +23,14 @@ struct TemplateConvexLiveCaller: TemplateConvexCalling {
         )
     }
 
+    func callMutation<Response: Decodable>(
+        _ mutation: String,
+        requestBody: Data
+    ) async throws -> Response {
+        let args = try TemplateConvexArgumentDecoder.decode(requestBody)
+        return try await client.mutation(mutation, with: args)
+    }
+
     private func fetchFirstValue<Response: Decodable>(
         from publisher: AnyPublisher<Response, ClientError>
     ) async throws -> Response {

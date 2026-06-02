@@ -10,6 +10,11 @@ protocol TemplateConvexCalling {
         _ query: String,
         requestBody: Data
     ) async throws -> Response
+
+    func callMutation<Response: Decodable>(
+        _ mutation: String,
+        requestBody: Data
+    ) async throws -> Response
 }
 
 enum TemplateBackendEndpoints {
@@ -17,12 +22,14 @@ enum TemplateBackendEndpoints {
     static let transcribeVoiceCommand = "commands:transcribeVoiceCommand"
     static let deleteAccount = "commands:deleteAccount"
     static let listEntries = "entries:listEntries"
+    static let updateEntry = "entries:updateEntry"
 }
 
 protocol TemplateCommandServicing {
     func submitCommand(_ request: TemplateConvexCommandRequest) async throws -> TemplateCommandResult
     func transcribeVoice(_ request: TemplateVoiceTranscriptionRequest) async throws -> TemplateVoiceTranscriptionResult
     func listEntries() async throws -> [TemplateListedEntry]
+    func updateEntry(id: String, body: String) async throws -> TemplateListedEntry
     func deleteAccount() async throws -> TemplateDeleteAccountResult
 }
 
@@ -59,6 +66,13 @@ struct TemplateBackendClient: TemplateCommandServicing {
         )
     }
 
+    func updateEntry(id: String, body: String) async throws -> TemplateListedEntry {
+        try await callMutation(
+            TemplateBackendEndpoints.updateEntry,
+            request: TemplateUpdateEntryRequest(id: id, body: body)
+        )
+    }
+
     func deleteAccount() async throws -> TemplateDeleteAccountResult {
         try await callAction(
             TemplateBackendEndpoints.deleteAccount,
@@ -82,6 +96,15 @@ struct TemplateBackendClient: TemplateCommandServicing {
         let caller = try requireCaller(for: query)
         let body = try JSONEncoder().encode(request)
         return try await caller.callQuery(query, requestBody: body)
+    }
+
+    private func callMutation<Response: Decodable, Request: Encodable>(
+        _ mutation: String,
+        request: Request
+    ) async throws -> Response {
+        let caller = try requireCaller(for: mutation)
+        let body = try JSONEncoder().encode(request)
+        return try await caller.callMutation(mutation, requestBody: body)
     }
 
     private func requireCaller(for endpoint: String) throws -> TemplateConvexCalling {
@@ -120,6 +143,12 @@ struct PlaceholderTemplateBackendClient: TemplateCommandServicing {
 
     func listEntries() async throws -> [TemplateListedEntry] {
         try requireConfigured(action: TemplateBackendEndpoints.listEntries)
+    }
+
+    func updateEntry(id: String, body: String) async throws -> TemplateListedEntry {
+        _ = id
+        _ = body
+        return try requireConfigured(action: TemplateBackendEndpoints.updateEntry)
     }
 
     func deleteAccount() async throws -> TemplateDeleteAccountResult {

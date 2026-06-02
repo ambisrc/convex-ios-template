@@ -17,6 +17,7 @@ final class TemplateConvexCommandRequestTests: XCTestCase {
         XCTAssertNotNil(fixture.actions[TemplateBackendEndpoints.transcribeVoiceCommand])
         XCTAssertNotNil(fixture.actions[TemplateBackendEndpoints.deleteAccount])
         XCTAssertNotNil(fixture.queries[TemplateBackendEndpoints.listEntries])
+        XCTAssertNotNil(fixture.mutations[TemplateBackendEndpoints.updateEntry])
     }
 
     func testTypedCommandRequestMatchesSharedContractFixture() throws {
@@ -64,7 +65,7 @@ final class TemplateConvexCommandRequestTests: XCTestCase {
         XCTAssertEqual(result.summary, "Created entry: hello.")
         XCTAssertEqual(result.operations, [.createEntry(body: "hello")])
         XCTAssertEqual(result.entries, [
-            TemplateAppliedEntry(body: "hello", source: .typed),
+            TemplateAppliedEntry(id: "entry_fixture", body: "hello", source: .typed),
         ])
     }
 
@@ -96,8 +97,29 @@ final class TemplateConvexCommandRequestTests: XCTestCase {
         let entries = try JSONDecoder().decode([TemplateListedEntry].self, from: json)
 
         XCTAssertEqual(entries, [
-            TemplateListedEntry(body: "hello", source: .typed),
+            TemplateListedEntry(id: "entry_fixture", body: "hello", source: .typed),
         ])
+    }
+
+    func testUpdateEntryRequestMatchesSharedContractFixture() throws {
+        let contract = try PublicActionContractFixture.load()
+            .requiredMutation(TemplateBackendEndpoints.updateEntry)
+        let request = TemplateUpdateEntryRequest(id: "entry_fixture", body: "edited hello")
+        let requestObject = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: JSONEncoder().encode(request)) as? NSDictionary
+        )
+
+        XCTAssertEqual(requestObject, contract.request as NSDictionary)
+    }
+
+    func testUpdateEntryResponseDecodesSharedMutationFixture() throws {
+        let json = try PublicActionContractFixture.load()
+            .requiredMutation(TemplateBackendEndpoints.updateEntry)
+            .successData()
+
+        let entry = try JSONDecoder().decode(TemplateListedEntry.self, from: json)
+
+        XCTAssertEqual(entry, TemplateListedEntry(id: "entry_fixture", body: "edited hello", source: .typed))
     }
 
     func testDeleteAccountResponseDecodesSharedContractFixture() throws {
@@ -152,6 +174,7 @@ final class TemplateConvexCommandRequestTests: XCTestCase {
 private struct PublicActionContractFixture: Decodable {
     let actions: [String: PublicActionContract]
     let queries: [String: PublicQueryContract]
+    let mutations: [String: PublicMutationContract]
 
     static func load(file: StaticString = #filePath) throws -> PublicActionContractFixture {
         let testFileURL = URL(fileURLWithPath: "\(file)")
@@ -170,6 +193,10 @@ private struct PublicActionContractFixture: Decodable {
 
     func requiredQuery(_ name: String) throws -> PublicQueryContract {
         try XCTUnwrap(queries[name], "Missing shared query contract for \(name)")
+    }
+
+    func requiredMutation(_ name: String) throws -> PublicMutationContract {
+        try XCTUnwrap(mutations[name], "Missing shared mutation contract for \(name)")
     }
 }
 
@@ -205,6 +232,15 @@ private enum PublicActionContractError: Error {
 }
 
 private struct PublicQueryContract: Decodable {
+    let request: [String: String]
+    let success: JSONValue
+
+    func successData() throws -> Data {
+        try JSONEncoder().encode(success)
+    }
+}
+
+private struct PublicMutationContract: Decodable {
     let request: [String: String]
     let success: JSONValue
 
