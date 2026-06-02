@@ -45,6 +45,14 @@ final class TemplateConvexCommandRequestTests: XCTestCase {
         XCTAssertNil(config)
     }
 
+    func testConvexConfigurationRejectsHostlessHTTPDeploymentURL() {
+        let config = TemplateConvexClientConfiguration.fromInfoDictionary([
+            "CONVEX_DEPLOYMENT_URL": "https:broken-value",
+        ])
+
+        XCTAssertNil(config)
+    }
+
     func testCommandResultDecodesPublicConvexResponseShape() throws {
         let json = try PublicActionContractFixture.load()
             .requiredAction(TemplateBackendEndpoints.submitCommand)

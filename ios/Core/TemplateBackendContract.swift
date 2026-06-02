@@ -178,7 +178,9 @@ struct TemplateConvexClientConfiguration: Equatable {
         guard
             let rawURL = dictionary["CONVEX_DEPLOYMENT_URL"] as? String,
             let url = URL(string: rawURL),
-            url.scheme == "http" || url.scheme == "https"
+            url.scheme == "http" || url.scheme == "https",
+            let host = url.host,
+            !host.isEmpty
         else {
             return nil
         }

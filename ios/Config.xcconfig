@@ -1,3 +1,5 @@
+// In xcconfig files, write https:// URLs as https:/$()/... so // is not parsed as a comment.
+// Example local override: CONVEX_DEPLOYMENT_URL = https:/$()/your-deployment.convex.cloud
 CONVEX_DEPLOYMENT_URL = https:/$()/example.convex.cloud
 
 #include? "Local.xcconfig"

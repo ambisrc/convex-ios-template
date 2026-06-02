@@ -69,8 +69,10 @@ deletion. Until a clone wires live credentials and SDK clients, those seams
 return explicit configuration-missing messages instead of pretending a live
 request succeeded.
 
-The iOS app reads `CONVEX_DEPLOYMENT_URL`, `POSTHOG_API_KEY`, and
-`POSTHOG_HOST` from `ios/Info.plist`. Server-side Convex functions read Apple,
+The iOS app reads `CONVEX_DEPLOYMENT_URL` from `ios/Config.xcconfig`, with
+gitignored local overrides in `ios/Local.xcconfig`; `ios/Info.plist` expands
+that value at build time. `POSTHOG_API_KEY` and `POSTHOG_HOST` remain in
+`ios/Info.plist` for the starter. Server-side Convex functions read Apple,
 Groq, Sentry, and PostHog cleanup values from Convex deployment env vars.
 
 ## Top-Level Docs
