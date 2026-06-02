@@ -4,6 +4,8 @@
 
 **Goal:** Move reusable lessons from the prototype snapshot into the template through small, reviewable PRs while keeping journal/reflection product work out of the starter.
 
+**Series status:** Completed through PRs #4-#8. The remaining work should start from a fresh reusable-template discovery pass rather than this prototype extraction backlog.
+
 **Architecture:** Treat the default branch as the template source of truth. Use prototype work only as reference material, then reimplement generic slices on fresh template branches. Keep each slice independently buildable and easy to revert.
 
 **Tech Stack:** SwiftUI, Xcode project settings, Convex Swift, Convex TypeScript, XCTest, Vitest, shared public-action fixtures.
@@ -36,17 +38,17 @@ Prototype-specific:
 
 ### node.ios-config
 
-- `status`: ready to ship in the first template PR
+- `status`: merged in PR #4
+- `branch`: `ambisrc/template-ios-config`
 - `purpose`: keep live Convex deployment URLs out of tracked plist files.
 - `verification`:
   - `plutil -lint ios/Info.plist`
   - `xcodebuild -list -project VoiceAgentTemplate.xcodeproj`
   - `xcodebuild build -project VoiceAgentTemplate.xcodeproj -scheme VoiceAgentTemplate -destination 'platform=iOS Simulator,OS=18.5,name=iPhone 16'`
-- `ship`: open PR against `main`.
 
 ### node.runtime-convex-auth
 
-- `status`: ready for PR
+- `status`: merged in PR #5
 - `branch`: `ambisrc/template-runtime-convex-auth`
 - `purpose`: add generic live Swift runtime wiring for Convex and Apple Sign In.
 - `files`:
@@ -117,7 +119,7 @@ Prototype-specific:
 
 ### node.account-deletion-extension-guide
 
-- `status`: ready for PR
+- `status`: merged in PR #8
 - `branch`: `ambisrc/template-account-deletion-guide`
 - `purpose`: make it hard to add new owner-owned tables without updating deletion contracts, Swift decoders, and fixtures.
 - `files`:
