@@ -4,6 +4,8 @@
 import { convexTest, type TestConvex } from "convex-test";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { api } from "./_generated/api";
+import { accountDeletionOwnedTableNames } from "./lib/accountDeletionContract";
+import publicActions from "../tests/fixtures/public-actions.json";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.ts");
@@ -57,6 +59,15 @@ async function seedLargeOwnedEntryVolume(
 describe("starter account lifecycle", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it("keeps delete account fixture count keys in sync with the deletion contract", () => {
+    const expectedKeys = [...accountDeletionOwnedTableNames].sort();
+    const contract = publicActions.actions["commands:deleteAccount"];
+
+    expect(Object.keys(contract.success.deleted).sort()).toEqual(expectedKeys);
+    expect(Object.keys(contract.deletionInProgress.deleted).sort()).toEqual(expectedKeys);
+    expect(Object.keys(contract.cleanupFailed.deleted).sort()).toEqual(expectedKeys);
   });
 
   it("deletes owner data and runs cleanup hooks without live vendor credentials", async () => {

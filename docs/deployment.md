@@ -99,3 +99,18 @@ account deletion completion.
 PostHog cleanup uses the configured deletion request API. Sentry cleanup records
 a best-effort account-cleanup report for project operators; it does not claim
 to delete or scrub Sentry user records.
+
+When adding a new table with `ownerKey`, extend account cleanup before shipping
+the clone:
+
+1. Add the table-specific delete helper and include it in
+   `deleteOwnedDataBatch` in `convex/account.ts`.
+2. Add the table count key to `accountDeletionOwnedTableNames` and a matching
+   `v.number()` entry to `deleteCountValidators` in
+   `convex/lib/accountDeletionContract.ts`.
+3. Add the key to every `commands:deleteAccount.deleted` object in
+   `tests/fixtures/public-actions.json`.
+4. Add the same key to `TemplateDeleteAccountResult.DeletedCounts` in
+   `ios/Core/TemplateBackendContract.swift`.
+5. Rerun `npx vitest run convex/account.test.ts`, `npx vitest run convex`, and
+   the iOS fixture tests.

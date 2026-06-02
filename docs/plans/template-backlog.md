@@ -98,7 +98,7 @@ Prototype-specific:
 
 ### node.plain-transcript-command
 
-- `status`: ready for PR
+- `status`: merged in PR #7
 - `branch`: `ambisrc/template-plain-transcript-command`
 - `purpose`: make the starter voice loop save plain non-empty transcripts without requiring command grammar.
 - `files`:
@@ -117,8 +117,8 @@ Prototype-specific:
 
 ### node.account-deletion-extension-guide
 
-- `status`: pending
-- `branch`: create from the latest template base branch.
+- `status`: ready for PR
+- `branch`: `ambisrc/template-account-deletion-guide`
 - `purpose`: make it hard to add new owner-owned tables without updating deletion contracts, Swift decoders, and fixtures.
 - `files`:
   - `docs/architecture.md`
@@ -131,9 +131,10 @@ Prototype-specific:
   - Prefer docs and tests over adding abstraction unless duplication becomes meaningful.
   - Do not add reflection-specific tables or counts to the template.
 - `verification`:
-  - `npx vitest run convex/account.test.ts`
-  - `npx vitest run convex`
-  - `xcodebuild test -project VoiceAgentTemplate.xcodeproj -scheme VoiceAgentTemplate -destination 'platform=iOS Simulator,OS=18.5,name=iPhone 16'`
+  - passed: `npx vitest run convex/account.test.ts` (1 file, 11 tests; existing convex-test scheduled-function stderr, exit 0)
+  - passed: `npx vitest run convex` (5 files, 25 tests; existing convex-test scheduled-function stderr in `account.test.ts`, exit 0)
+  - passed: `npx tsc -p convex/tsconfig.json`
+  - passed: XcodeBuildMCP `test_sim` full suite on iPhone 16 simulator (45 tests, 0 failures)
 
 ## Working Rules
 
