@@ -71,7 +71,7 @@ Prototype-specific:
 
 ### node.entry-contracts
 
-- `status`: ready for PR
+- `status`: merged in PR #6
 - `branch`: `ambisrc/template-entry-contracts`
 - `purpose`: make starter entries editable through stable public contracts.
 - `files`:
@@ -98,8 +98,8 @@ Prototype-specific:
 
 ### node.plain-transcript-command
 
-- `status`: pending
-- `branch`: create from the latest template base branch.
+- `status`: ready for PR
+- `branch`: `ambisrc/template-plain-transcript-command`
 - `purpose`: make the starter voice loop save plain non-empty transcripts without requiring command grammar.
 - `files`:
   - `convex/_generated/ai/guidelines.md` read first
@@ -111,9 +111,9 @@ Prototype-specific:
   - Existing explicit `create note saying ...` syntax can remain as a convenience.
   - Keep all assistant-driven writes entering through `convex/commands.ts:submitCommand`.
 - `verification`:
-  - `npx vitest run convex/commandExecution.test.ts`
-  - `npx vitest run convex`
-  - `npx tsc -p convex/tsconfig.json`
+  - passed: `npx vitest run convex/commandExecution.test.ts` (1 file, 5 tests)
+  - passed: `npx vitest run convex` (5 files, 24 tests; existing convex-test scheduled-function stderr in `account.test.ts`, exit 0)
+  - passed: `npx tsc -p convex/tsconfig.json`
 
 ### node.account-deletion-extension-guide
 

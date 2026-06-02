@@ -12,12 +12,16 @@ export function interpretCommand(text: string): {
 }
 
 function parseOperations(text: string): AssistantOperation[] {
+  if (!text) {
+    throw new Error("EMPTY_COMMAND");
+  }
+
   const body = text
     .replace(/^create\s+(a\s+)?(note|entry)\s+(saying|called|named)\s+/i, "")
     .trim();
 
-  if (!body || body === text) {
-    throw new Error("UNSUPPORTED_COMMAND");
+  if (!body) {
+    throw new Error("EMPTY_COMMAND");
   }
 
   return [{ type: "create_entry", body }];
