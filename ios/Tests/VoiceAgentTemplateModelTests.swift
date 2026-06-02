@@ -38,6 +38,22 @@ final class VoiceAgentTemplateModelTests: XCTestCase {
         XCTAssertEqual(model.feedbackMessage, "Configure Apple Sign In.")
     }
 
+    func testFailedConvexAuthDoesNotFakeSignIn() async {
+        let model = VoiceAgentTemplateModel(
+            sessionService: StubSessionService(result: .failure(.failed("Sign in with Apple was canceled."))),
+            commandService: StubCommandService(),
+            voiceCapture: StubVoiceCapture(),
+            analytics: TemplateProductAnalytics(configuration: nil),
+            sentryScope: TemplateSentryUserScope(),
+            launchArguments: []
+        )
+
+        await model.signIn()
+
+        XCTAssertFalse(model.isSignedIn)
+        XCTAssertEqual(model.feedbackMessage, "Sign in with Apple was canceled.")
+    }
+
     func testTypedCommandSubmitsThroughConvexCommandSeamAndUsesAppliedResult() async {
         let commandService = StubCommandService()
         commandService.submitResult = TemplateCommandResult(

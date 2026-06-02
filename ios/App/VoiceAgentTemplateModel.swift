@@ -16,8 +16,8 @@ final class VoiceAgentTemplateModel: ObservableObject {
     private let sentryScope: TemplateSentryUserScope
 
     init(
-        sessionService: TemplateSessionServicing = TemplateConfiguredSessionService(),
-        commandService: TemplateCommandServicing = PlaceholderTemplateBackendClient(),
+        sessionService: TemplateSessionServicing = TemplateRuntimeServices.makeSessionService(),
+        commandService: TemplateCommandServicing = TemplateRuntimeServices.makeCommandService(),
         voiceCapture: TemplateVoiceCapturing = TemplateVoiceCaptureService(),
         analytics: TemplateProductAnalytics = TemplateProductAnalytics(configuration: .fromBundle()),
         sentryScope: TemplateSentryUserScope = TemplateSentryUserScope(),

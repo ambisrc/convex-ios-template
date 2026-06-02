@@ -1,3 +1,4 @@
+import ConvexMobile
 import Foundation
 
 struct TemplateSession: Equatable {
@@ -31,9 +32,14 @@ struct TemplateVoiceAudio: Equatable {
 
 struct TemplateConfiguredSessionService: TemplateSessionServicing {
     let configuration: TemplateConvexClientConfiguration?
+    let authClient: ConvexClientWithAuth<TemplateAppleSignInResult>?
 
-    init(configuration: TemplateConvexClientConfiguration? = .fromInfoDictionary(Bundle.main.infoDictionary ?? [:])) {
+    init(
+        configuration: TemplateConvexClientConfiguration? = .fromInfoDictionary(Bundle.main.infoDictionary ?? [:]),
+        authClient: ConvexClientWithAuth<TemplateAppleSignInResult>? = nil
+    ) {
         self.configuration = configuration
+        self.authClient = authClient
     }
 
     func signIn() async throws -> TemplateSession {
@@ -42,9 +48,22 @@ struct TemplateConfiguredSessionService: TemplateSessionServicing {
                 "Configure Convex and Sign in with Apple before live sign-in."
             )
         }
-        throw TemplateServiceError.missingConfiguration(
-            "Connect your Apple auth provider to \(configuration.deploymentURL.absoluteString)."
-        )
+        guard let authClient else {
+            throw TemplateServiceError.missingConfiguration(
+                "Connect your Apple auth provider to \(configuration.deploymentURL.absoluteString)."
+            )
+        }
+
+        switch await authClient.login() {
+        case .success(let result):
+            return TemplateSession(ownerKey: try TemplateJWTIdentity.ownerKey(fromIdentityToken: result.identityToken))
+        case .failure(let error):
+            if let localizedError = error as? LocalizedError,
+               let description = localizedError.errorDescription {
+                throw TemplateServiceError.failed(description)
+            }
+            throw TemplateServiceError.failed(error.localizedDescription)
+        }
     }
 }
 
