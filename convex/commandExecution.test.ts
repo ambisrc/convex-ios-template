@@ -26,11 +26,21 @@ describe("starter command execution", () => {
 
     const response = await t.action(api.commands.submitCommand, request);
 
-    expect(response).toEqual(contract.success);
+    expect(response).toMatchObject({
+      status: contract.success.status,
+      summary: contract.success.summary,
+      operations: contract.success.operations,
+    });
+    expect(response.entries).toHaveLength(1);
+    expect(response.entries[0]).toMatchObject({
+      body: contract.success.entries[0]?.body,
+      source: contract.success.entries[0]?.source,
+    });
+    expect(response.entries[0]?.id).toEqual(expect.any(String));
     expect(response).not.toHaveProperty("entryIds");
 
     const entries = await t.query(api.entries.listEntries, {});
-    expect(entries).toEqual(publicActions.queries["entries:listEntries"].success);
+    expect(entries).toEqual(response.entries);
     expect(entries[0]).not.toHaveProperty("_id");
     expect(entries[0]).not.toHaveProperty("ownerKey");
   });
@@ -46,10 +56,15 @@ describe("starter command execution", () => {
 
     const entries = await t.query(api.entries.listEntries, {});
 
-    expect(entries).toEqual(contract.success);
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      body: contract.success[0]?.body,
+      source: contract.success[0]?.source,
+    });
+    expect(entries[0]?.id).toEqual(expect.any(String));
     for (const entry of entries) {
-      expect(entry).toEqual({ body: entry.body, source: entry.source });
-      expect(Object.keys(entry).sort()).toEqual(["body", "source"]);
+      expect(entry).toEqual({ id: entry.id, body: entry.body, source: entry.source });
+      expect(Object.keys(entry).sort()).toEqual(["body", "id", "source"]);
     }
   });
 

@@ -1,9 +1,11 @@
 import { v } from "convex/values";
+import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { internalMutation } from "../_generated/server";
 import { commandSourceValidator, operationValidator, type CommandSource } from "./operations";
 
 export type AppliedEntry = {
+  id: Id<"entries">;
   body: string;
   source: CommandSource;
 };
@@ -50,7 +52,7 @@ export const applyCommand = internalMutation({
         updatedAt: now,
       });
       entryIds.push(entryId);
-      entries.push({ body: operation.body, source: args.source });
+      entries.push({ id: entryId, body: operation.body, source: args.source });
     }
 
     await ctx.db.insert("usageEvents", {
@@ -66,6 +68,47 @@ export const applyCommand = internalMutation({
     return { commandId, entryIds, entries };
   },
 });
+
+export const updateEntryBody = internalMutation({
+  args: {
+    ownerKey: v.string(),
+    entryId: v.id("entries"),
+    body: v.string(),
+  },
+  handler: async (ctx, args): Promise<AppliedEntry> => {
+    return await updateEntryBodyForOwner(ctx, args);
+  },
+});
+
+export async function updateEntryBodyForOwner(
+  ctx: MutationCtx,
+  args: {
+    ownerKey: string;
+    entryId: Id<"entries">;
+    body: string;
+  },
+): Promise<AppliedEntry> {
+  const entry = await ctx.db.get(args.entryId);
+  if (!entry || entry.ownerKey !== args.ownerKey) {
+    throw new Error("ENTRY_NOT_FOUND");
+  }
+
+  const body = args.body.trim();
+  if (!body) {
+    throw new Error("EMPTY_ENTRY_BODY");
+  }
+
+  await ctx.db.patch(args.entryId, {
+    body,
+    updatedAt: Date.now(),
+  });
+
+  return {
+    id: args.entryId,
+    body,
+    source: entry.source,
+  };
+}
 
 async function ensureProfile(
   ctx: MutationCtx,

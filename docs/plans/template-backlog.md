@@ -71,11 +71,12 @@ Prototype-specific:
 
 ### node.entry-contracts
 
-- `status`: pending
-- `branch`: create from the latest template base branch after previous PRs land.
+- `status`: ready for PR
+- `branch`: `ambisrc/template-entry-contracts`
 - `purpose`: make starter entries editable through stable public contracts.
 - `files`:
   - `convex/_generated/ai/guidelines.md` read first
+  - `convex/commands.ts`
   - `convex/entries.ts`
   - `convex/lib/apply.ts`
   - `convex/entries.test.ts`
@@ -90,9 +91,10 @@ Prototype-specific:
   - `entries:updateEntry` must derive ownership server-side and apply writes through `convex/lib/apply.ts`.
   - Extend the shared fixture format to include mutations.
 - `verification`:
-  - `npx vitest run convex`
-  - `npx tsc -p convex/tsconfig.json`
-  - `xcodebuild test -project VoiceAgentTemplate.xcodeproj -scheme VoiceAgentTemplate -destination 'platform=iOS Simulator,OS=18.5,name=iPhone 16'`
+  - passed: `npx vitest run convex` (5 files, 23 tests; existing convex-test scheduled-function stderr in `account.test.ts`, exit 0)
+  - passed: `npx tsc -p convex/tsconfig.json`
+  - passed: XcodeBuildMCP `test_sim` for focused contract/model tests (30 tests, 0 failures)
+  - passed: XcodeBuildMCP `test_sim` full suite on iPhone 16 simulator (45 tests, 0 failures)
 
 ### node.plain-transcript-command
 

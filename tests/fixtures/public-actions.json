@@ -16,6 +16,7 @@
         ],
         "entries": [
           {
+            "id": "entry_fixture",
             "body": "hello",
             "source": "typed"
           }
@@ -96,10 +97,24 @@
       "request": {},
       "success": [
         {
+          "id": "entry_fixture",
           "body": "hello",
           "source": "typed"
         }
       ]
+    }
+  },
+  "mutations": {
+    "entries:updateEntry": {
+      "request": {
+        "id": "entry_fixture",
+        "body": "edited hello"
+      },
+      "success": {
+        "id": "entry_fixture",
+        "body": "edited hello",
+        "source": "typed"
+      }
     }
   }
 }

@@ -3,10 +3,11 @@ import { internal } from "./_generated/api";
 import { action } from "./_generated/server";
 import type { DeleteAccountResponse } from "./lib/accountDeletionContract";
 import { requireOwnerKey } from "./lib/auth";
-import { commandSourceValidator, type AssistantOperation, type CommandSource } from "./lib/operations";
+import { commandSourceValidator, type AssistantOperation } from "./lib/operations";
 import { interpretCommand } from "./lib/commandInterpreter";
 import { withSentry } from "./lib/sentry";
 import { transcribeVoice } from "./lib/voiceTranscription";
+import type { AppliedEntry } from "./lib/apply";
 
 export type { DeleteAccountResponse } from "./lib/accountDeletionContract";
 
@@ -14,10 +15,7 @@ export type CommandResponse = {
   status: "applied";
   summary: string;
   operations: AssistantOperation[];
-  entries: Array<{
-    body: string;
-    source: CommandSource;
-  }>;
+  entries: AppliedEntry[];
 };
 
 type AppleAuthorizationResponse = {

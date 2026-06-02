@@ -136,7 +136,7 @@ final class VoiceAgentTemplateModel: ObservableObject {
 
     private func apply(_ result: TemplateCommandResult) {
         let appliedEntries = result.entries.map {
-            Entry(body: $0.body, source: Entry.Source(rawValue: $0.source.rawValue) ?? .typed)
+            Entry(id: $0.id, body: $0.body, source: Entry.Source(rawValue: $0.source.rawValue) ?? .typed)
         }
         entries.insert(contentsOf: appliedEntries, at: 0)
     }
@@ -152,8 +152,8 @@ final class VoiceAgentTemplateModel: ObservableObject {
         isSignedIn = true
         sentryScope.bind(ownerKey: "fixture-owner")
         entries = [
-            Entry(body: "Draft launch announcement", source: .typed),
-            Entry(body: "Follow up from voice note", source: .voice),
+            Entry(id: "fixture-typed", body: "Draft launch announcement", source: .typed),
+            Entry(id: "fixture-voice", body: "Follow up from voice note", source: .voice),
         ]
 
         if arguments.contains("--template-voice-fallback") {
@@ -184,7 +184,7 @@ struct Entry: Identifiable, Equatable {
         case voice
     }
 
-    let id = UUID()
+    let id: String
     let body: String
     let source: Source
 }

@@ -34,13 +34,20 @@ enum TemplateAssistantOperation: Decodable, Equatable {
 }
 
 struct TemplateAppliedEntry: Decodable, Equatable {
+    let id: String
     let body: String
     let source: TemplateCommandSource
 }
 
 struct TemplateListedEntry: Decodable, Equatable {
+    let id: String
     let body: String
     let source: TemplateCommandSource
+}
+
+struct TemplateUpdateEntryRequest: Encodable, Equatable {
+    let id: String
+    let body: String
 }
 
 struct TemplateCommandResult: Decodable, Equatable {

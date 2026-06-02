@@ -39,7 +39,27 @@ final class TemplateBackendClientTests: XCTestCase {
 
         XCTAssertEqual(caller.queryCalls.map(\.name), [TemplateBackendEndpoints.listEntries])
         XCTAssertEqual(caller.queryCalls.first?.body, try JSONEncoder().encode(EmptyConvexRequest()))
-        XCTAssertEqual(entries, [TemplateListedEntry(body: "hello", source: .typed)])
+        XCTAssertEqual(entries, [TemplateListedEntry(id: "entry_fixture", body: "hello", source: .typed)])
+    }
+
+    func testBackendClientRoutesUpdateEntryThroughInjectedMutationCaller() async throws {
+        let fixture = try PublicActionContractFixture.load()
+            .requiredMutation(TemplateBackendEndpoints.updateEntry)
+        let caller = ConvexCallerSpy()
+        caller.mutationResponses[TemplateBackendEndpoints.updateEntry] = try fixture.successData()
+        let client = TemplateBackendClient(
+            configuration: TemplateConvexClientConfiguration(deploymentURL: URL(string: "https://live.convex.cloud")!),
+            caller: caller
+        )
+
+        let updated = try await client.updateEntry(id: "entry_fixture", body: "edited hello")
+
+        XCTAssertEqual(caller.mutationCalls.map(\.name), [TemplateBackendEndpoints.updateEntry])
+        XCTAssertEqual(
+            caller.mutationCalls.first?.body,
+            try JSONEncoder().encode(TemplateUpdateEntryRequest(id: "entry_fixture", body: "edited hello"))
+        )
+        XCTAssertEqual(updated, TemplateListedEntry(id: "entry_fixture", body: "edited hello", source: .typed))
     }
 
     func testBackendClientRoutesDeleteAccountThroughInjectedCaller() async throws {
@@ -89,8 +109,10 @@ private final class ConvexCallerSpy: TemplateConvexCalling {
 
     var actionCalls: [Call] = []
     var queryCalls: [Call] = []
+    var mutationCalls: [Call] = []
     var actionResponses: [String: Data] = [:]
     var queryResponses: [String: Data] = [:]
+    var mutationResponses: [String: Data] = [:]
 
     func callAction<Response>(
         _ action: String,
@@ -113,11 +135,23 @@ private final class ConvexCallerSpy: TemplateConvexCalling {
         }
         return try JSONDecoder().decode(Response.self, from: responseData)
     }
+
+    func callMutation<Response>(
+        _ mutation: String,
+        requestBody: Data
+    ) async throws -> Response where Response: Decodable {
+        mutationCalls.append(Call(name: mutation, body: requestBody))
+        guard let responseData = mutationResponses[mutation] else {
+            throw TemplateServiceError.failed("Missing spy response for \(mutation)")
+        }
+        return try JSONDecoder().decode(Response.self, from: responseData)
+    }
 }
 
 private struct PublicActionContractFixture: Decodable {
     let actions: [String: PublicActionContract]
     let queries: [String: PublicQueryContract]
+    let mutations: [String: PublicMutationContract]
 
     static func load(file: StaticString = #filePath) throws -> PublicActionContractFixture {
         let testFileURL = URL(fileURLWithPath: "\(file)")
@@ -137,6 +171,10 @@ private struct PublicActionContractFixture: Decodable {
     func requiredQuery(_ name: String) throws -> PublicQueryContract {
         try XCTUnwrap(queries[name], "Missing shared query contract for \(name)")
     }
+
+    func requiredMutation(_ name: String) throws -> PublicMutationContract {
+        try XCTUnwrap(mutations[name], "Missing shared mutation contract for \(name)")
+    }
 }
 
 private struct PublicActionContract: Decodable {
@@ -149,6 +187,15 @@ private struct PublicActionContract: Decodable {
 }
 
 private struct PublicQueryContract: Decodable {
+    let request: [String: String]
+    let success: JSONValue
+
+    func successData() throws -> Data {
+        try JSONEncoder().encode(success)
+    }
+}
+
+private struct PublicMutationContract: Decodable {
     let request: [String: String]
     let success: JSONValue
 
