@@ -8,3 +8,5 @@ DerivedData/
 *.xcresult
 *.xccovreport
 *.xccovarchive
+xcuserdata/
+ios/Local.xcconfig

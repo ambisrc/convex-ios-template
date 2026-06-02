@@ -54,10 +54,13 @@ JWT value in Convex env. Keep the `.p8` file outside git.
 
 ## iOS
 
-Replace the example bundle identifier and `CONVEX_DEPLOYMENT_URL` before
-shipping a clone. If the clone uses PostHog from iOS, set `POSTHOG_API_KEY`
-and `POSTHOG_HOST` in `ios/Info.plist`; leave them empty for a no-op local
-starter. Build with an explicit simulator destination:
+Replace the example bundle identifier before shipping a clone. `ios/Info.plist`
+reads `CONVEX_DEPLOYMENT_URL` from `ios/Config.xcconfig`, which includes an
+optional gitignored `ios/Local.xcconfig` for local device builds. Keep live
+deployment URLs in `ios/Local.xcconfig`, not in tracked plist files. If the
+clone uses PostHog from iOS, set `POSTHOG_API_KEY` and `POSTHOG_HOST` in
+`ios/Info.plist`; leave them empty for a no-op local starter. Build with an
+explicit simulator destination:
 
 ```sh
 xcodebuild build -project VoiceAgentTemplate.xcodeproj -scheme VoiceAgentTemplate -destination 'platform=iOS Simulator,OS=18.5,name=iPhone 16'
