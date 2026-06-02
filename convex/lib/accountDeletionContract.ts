@@ -1,12 +1,24 @@
 import { v, type Infer } from "convex/values";
 
-export const deleteCountsValidator = v.object({
+export const accountDeletionOwnedTableNames = [
+  "profiles",
+  "entries",
+  "commandHistory",
+  "appleSignInCredentials",
+  "usageEvents",
+] as const;
+
+export type AccountDeletionOwnedTableName = typeof accountDeletionOwnedTableNames[number];
+
+const deleteCountValidators = {
   profiles: v.number(),
   entries: v.number(),
   commandHistory: v.number(),
   appleSignInCredentials: v.number(),
   usageEvents: v.number(),
-});
+} satisfies Record<AccountDeletionOwnedTableName, ReturnType<typeof v.number>>;
+
+export const deleteCountsValidator = v.object(deleteCountValidators);
 
 export type DeleteCounts = Infer<typeof deleteCountsValidator>;
 

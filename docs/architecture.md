@@ -140,6 +140,21 @@ Clone-owned replacement points:
 - vendor cleanup policies and retention docs;
 - Settings copy and account UI.
 
+When a clone adds a new owner-owned Convex table, update the account deletion
+surface in one change:
+
+- add the table deletion query to `convex/account.ts`;
+- add its count key to `accountDeletionOwnedTableNames` in
+  `convex/lib/accountDeletionContract.ts`;
+- update `tests/fixtures/public-actions.json` delete-account responses;
+- update `TemplateDeleteAccountResult.DeletedCounts` in
+  `ios/Core/TemplateBackendContract.swift`;
+- update backend and Swift fixture tests.
+
+The fixture sync test in `convex/account.test.ts` intentionally fails when the
+delete-count contract and public fixture drift. The Swift fixture decode tests
+then catch a missing iOS mirror.
+
 ## iOS Service Adapters
 
 Stable contract:

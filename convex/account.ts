@@ -5,6 +5,7 @@ import type { ActionCtx, MutationCtx } from "./_generated/server";
 import { internalAction, internalMutation } from "./_generated/server";
 import {
   accountDeletionCleanupValidator,
+  accountDeletionOwnedTableNames,
   type AccountDeletionCleanup,
   type DeleteAccountResponse,
   type DeleteCounts,
@@ -451,23 +452,18 @@ function isActiveDeletionJob(status: DeletionJobDoc["status"]) {
 }
 
 function emptyDeleteCounts(): DeleteCounts {
-  return {
-    profiles: 0,
-    entries: 0,
-    commandHistory: 0,
-    appleSignInCredentials: 0,
-    usageEvents: 0,
-  };
+  return Object.fromEntries(
+    accountDeletionOwnedTableNames.map((tableName) => [tableName, 0]),
+  ) as DeleteCounts;
 }
 
 function addDeleteCounts(total: DeleteCounts, batch: DeleteCounts): DeleteCounts {
-  return {
-    profiles: total.profiles + batch.profiles,
-    entries: total.entries + batch.entries,
-    commandHistory: total.commandHistory + batch.commandHistory,
-    appleSignInCredentials: total.appleSignInCredentials + batch.appleSignInCredentials,
-    usageEvents: total.usageEvents + batch.usageEvents,
-  };
+  return Object.fromEntries(
+    accountDeletionOwnedTableNames.map((tableName) => [
+      tableName,
+      total[tableName] + batch[tableName],
+    ]),
+  ) as DeleteCounts;
 }
 
 export function deletionJobToDeletedResponse(job: DeletionJobDoc) {
