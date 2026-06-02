@@ -293,6 +293,49 @@ describe("starter account lifecycle", () => {
     expect(JSON.stringify(fetchSpy.mock.calls)).not.toContain("delete");
   });
 
+  it("awaits PostHog cleanup before starting Sentry cleanup", async () => {
+    vi.stubGlobal("process", {
+      env: {
+        POSTHOG_HOST: "https://eu.posthog.com/",
+        POSTHOG_PROJECT_ID: "12345",
+        POSTHOG_PERSONAL_API_KEY: "test-posthog-key",
+        SENTRY_AUTH_TOKEN: "test-sentry-token",
+        SENTRY_ORG_SLUG: "example-org",
+        SENTRY_PROJECT_SLUG: "voice-agent",
+      },
+    });
+
+    let releasePosthog: (() => void) | undefined;
+    const posthogGate = new Promise<Response>((resolve) => {
+      releasePosthog = () => resolve(new Response(null, { status: 204 }));
+    });
+    const fetchOrder: Array<"posthog" | "sentry"> = [];
+    const fetchSpy = vi.fn(async (input: RequestInfo | URL) => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      if (url.includes("/persons/bulk_delete/")) {
+        fetchOrder.push("posthog");
+        return await posthogGate;
+      }
+      fetchOrder.push("sentry");
+      return new Response(null, { status: 202 });
+    });
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const t = convexTest(schema, modules).withIdentity(identity);
+    await t.action(api.commands.submitCommand, {
+      text: "Create a note saying hello",
+      source: "typed",
+    });
+
+    const deletion = t.action(api.commands.deleteAccount, {});
+    await vi.waitFor(() => expect(fetchOrder).toEqual(["posthog"]));
+    releasePosthog?.();
+    const response = await deletion;
+
+    expect(response.status).toBe("deleted");
+    expect(fetchOrder).toEqual(["posthog", "sentry"]);
+  });
+
   it("requests PostHog person deletion with the owner key and configured host", async () => {
     vi.stubGlobal("process", {
       env: {

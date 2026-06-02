@@ -3,36 +3,24 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import type { ActionCtx, MutationCtx } from "./_generated/server";
 import { internalAction, internalMutation } from "./_generated/server";
+import {
+  accountDeletionCleanupValidator,
+  type AccountDeletionCleanup,
+  type DeleteAccountResponse,
+  type DeleteCounts,
+  type PosthogCleanupResult,
+  type SentryCleanupResult,
+} from "./lib/accountDeletionContract";
 
 const DELETE_BATCH_LIMIT = 50;
-
-export type DeleteCounts = {
-  profiles: number;
-  entries: number;
-  commandHistory: number;
-  appleSignInCredentials: number;
-  usageEvents: number;
-};
+const MAX_SYNCHRONOUS_DELETE_BATCHES = 20;
 
 type DeleteBatchResult = {
   deleted: DeleteCounts;
   hasMore: boolean;
 };
 
-type CleanupResult =
-  | { status: "skipped"; reason: "missing_config" }
-  | { status: "requested" }
-  | { status: "failed"; reason: string };
-
-type SentryCleanupResult =
-  | { status: "skipped"; reason: "missing_config" }
-  | { status: "reported" }
-  | { status: "failed"; reason: string };
-
-type AccountDeletionCleanup = {
-  posthog: CleanupResult;
-  sentry: SentryCleanupResult;
-};
+type DeletionRunMode = "sync" | "scheduled";
 
 type DeletionJobDoc = Doc<"accountDeletionJobs">;
 
@@ -69,12 +57,59 @@ export const recordAppleSignInAuthorization = internalMutation({
   },
 });
 
-export const deleteAccount = internalMutation({
+export const deleteAccountForOwner = internalAction({
   args: {
     ownerKey: v.string(),
   },
-  handler: async (ctx, args) => {
-    return await deleteOwnedDataBatch(ctx, args.ownerKey);
+  handler: async (ctx, args): Promise<DeleteAccountResponse> => {
+    let result = await ctx.runMutation(internal.account.requestAccountDeletion, {
+      ownerKey: args.ownerKey,
+    });
+
+    if (result.kind === "already_deleted") {
+      return deletionJobToDeletedResponse(result.job);
+    }
+    if (result.kind === "in_progress") {
+      return {
+        status: "deletion_in_progress",
+        deleted: result.deleted,
+        batches: result.batches,
+        jobStatus: result.jobStatus,
+      };
+    }
+
+    while (result.kind === "batch_done" && result.hasMore && result.batches < MAX_SYNCHRONOUS_DELETE_BATCHES) {
+      result = await ctx.runMutation(internal.account.runAccountDeletionBatch, {
+        ownerKey: args.ownerKey,
+      });
+    }
+
+    if (result.kind === "batch_done" && result.hasMore) {
+      await ctx.runMutation(internal.account.scheduleAccountDeletionContinuation, {
+        ownerKey: args.ownerKey,
+      });
+      return {
+        status: "deletion_in_progress",
+        deleted: result.deleted,
+        batches: result.batches,
+        jobStatus: result.jobStatus,
+      };
+    }
+    if (result.kind === "ready_for_inline_cleanup") {
+      const cleanup = await runAccountDeletionVendorCleanup(ctx, args.ownerKey);
+      await ctx.runMutation(internal.account.finalizeAccountDeletion, {
+        ownerKey: args.ownerKey,
+        cleanup,
+      });
+      return {
+        status: "deleted",
+        deleted: result.deleted,
+        batches: result.batches,
+        cleanup,
+      };
+    }
+
+    throw new Error("UNEXPECTED_ACCOUNT_DELETION_RESULT");
   },
 });
 
@@ -109,8 +144,7 @@ export const requestAccountDeletion = internalMutation({
     return await runDeletionBatch(ctx, {
       jobId,
       ownerKey: args.ownerKey,
-      scheduleContinuationWhenMore: false,
-      scheduleCleanupWhenComplete: false,
+      mode: "sync",
     });
   },
 });
@@ -128,8 +162,7 @@ export const runAccountDeletionBatch = internalMutation({
     return await runDeletionBatch(ctx, {
       jobId: job._id,
       ownerKey: args.ownerKey,
-      scheduleContinuationWhenMore: false,
-      scheduleCleanupWhenComplete: false,
+      mode: "sync",
     });
   },
 });
@@ -162,8 +195,7 @@ export const continueAccountDeletion = internalMutation({
     return await runDeletionBatch(ctx, {
       jobId: job._id,
       ownerKey: args.ownerKey,
-      scheduleContinuationWhenMore: true,
-      scheduleCleanupWhenComplete: true,
+      mode: "scheduled",
     });
   },
 });
@@ -194,18 +226,7 @@ export const beginAccountDeletionCleanup = internalMutation({
 export const finalizeAccountDeletion = internalMutation({
   args: {
     ownerKey: v.string(),
-    cleanup: v.object({
-      posthog: v.union(
-        v.object({ status: v.literal("skipped"), reason: v.literal("missing_config") }),
-        v.object({ status: v.literal("requested") }),
-        v.object({ status: v.literal("failed"), reason: v.string() }),
-      ),
-      sentry: v.union(
-        v.object({ status: v.literal("skipped"), reason: v.literal("missing_config") }),
-        v.object({ status: v.literal("reported") }),
-        v.object({ status: v.literal("failed"), reason: v.string() }),
-      ),
-    }),
+    cleanup: accountDeletionCleanupValidator,
   },
   handler: async (ctx, args) => {
     const job = await getDeletionJob(ctx, args.ownerKey);
@@ -242,15 +263,15 @@ export const runAccountDeletionCleanup = internalAction({
   },
 });
 
-export async function runAccountDeletionVendorCleanup(
+async function runAccountDeletionVendorCleanup(
   ctx: Pick<ActionCtx, "runAction">,
   ownerKey: string,
 ): Promise<AccountDeletionCleanup> {
-  const posthog: CleanupResult = await runCleanupStep(async () => {
-    const result: CleanupResult = await ctx.runAction(internal.posthog.deletePerson, { ownerKey });
+  const posthog = await runCleanupStep(async () => {
+    const result: PosthogCleanupResult = await ctx.runAction(internal.posthog.deletePerson, { ownerKey });
     return result;
   });
-  const sentry: SentryCleanupResult = await runCleanupStep(async () => {
+  const sentry = await runCleanupStep(async () => {
     const result: SentryCleanupResult = await ctx.runAction(internal.sentry.recordAccountCleanup, { ownerKey });
     return result;
   });
@@ -258,7 +279,7 @@ export async function runAccountDeletionVendorCleanup(
   return { posthog, sentry };
 }
 
-async function runCleanupStep<T extends CleanupResult | SentryCleanupResult>(
+async function runCleanupStep<T extends PosthogCleanupResult | SentryCleanupResult>(
   cleanup: () => Promise<T>,
 ): Promise<T | { status: "failed"; reason: string }> {
   try {
@@ -280,8 +301,7 @@ async function runDeletionBatch(
   args: {
     jobId: Id<"accountDeletionJobs">;
     ownerKey: string;
-    scheduleContinuationWhenMore: boolean;
-    scheduleCleanupWhenComplete: boolean;
+    mode: DeletionRunMode;
   },
 ) {
   const job = await ctx.db.get(args.jobId);
@@ -293,6 +313,7 @@ async function runDeletionBatch(
   const deleted = addDeleteCounts(job.deleted, batch.deleted);
   const batches = job.batches + 1;
   const now = Date.now();
+  const schedule = args.mode === "scheduled";
 
   if (batch.hasMore) {
     await ctx.db.patch(args.jobId, {
@@ -300,7 +321,7 @@ async function runDeletionBatch(
       batches,
       updatedAt: now,
     });
-    if (args.scheduleContinuationWhenMore) {
+    if (schedule) {
       await ctx.scheduler.runAfter(0, internal.account.continueAccountDeletion, {
         ownerKey: args.ownerKey,
       });
@@ -321,7 +342,7 @@ async function runDeletionBatch(
     updatedAt: now,
   });
 
-  if (args.scheduleCleanupWhenComplete) {
+  if (schedule) {
     await ctx.scheduler.runAfter(0, internal.account.runAccountDeletionCleanup, {
       ownerKey: args.ownerKey,
     });
@@ -460,5 +481,3 @@ export function deletionJobToDeletedResponse(job: DeletionJobDoc) {
     cleanup: job.cleanup,
   };
 }
-
-export type AccountDeletionCleanupResult = AccountDeletionCleanup;

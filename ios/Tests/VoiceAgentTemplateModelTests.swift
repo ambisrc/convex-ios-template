@@ -169,18 +169,60 @@ final class VoiceAgentTemplateModelTests: XCTestCase {
         XCTAssertTrue(model.entries.isEmpty)
         XCTAssertNil(sentryScope.ownerKey)
     }
+
+    func testDeleteAccountClearsWritableLocalStateWhenDeletionIsInProgress() async {
+        let sentryScope = TemplateSentryUserScope()
+        sentryScope.bind(ownerKey: "test|owner")
+        let analytics = AnalyticsSpy()
+        let commandService = StubCommandService()
+        commandService.deleteAccountResult = .deletionInProgress(
+            deleted: .init(
+                profiles: 0,
+                entries: 1000,
+                commandHistory: 1000,
+                appleSignInCredentials: 0,
+                usageEvents: 1000
+            ),
+            batches: 20,
+            jobStatus: .deleting
+        )
+        let model = VoiceAgentTemplateModel(
+            sessionService: StubSessionService(result: .success(TemplateSession(ownerKey: "test|owner"))),
+            commandService: commandService,
+            voiceCapture: StubVoiceCapture(),
+            analytics: analytics.tracker,
+            sentryScope: sentryScope,
+            launchArguments: []
+        )
+        model.isSignedIn = true
+        model.commandText = "draft command"
+        model.entries = [Entry(body: "Existing", source: .typed)]
+
+        await model.deleteAccount()
+
+        XCTAssertEqual(commandService.deleteAccountCallCount, 1)
+        XCTAssertFalse(model.isSignedIn)
+        XCTAssertTrue(model.entries.isEmpty)
+        XCTAssertEqual(model.commandText, "")
+        XCTAssertNil(sentryScope.ownerKey)
+        XCTAssertEqual(model.feedbackMessage?.isEmpty, false)
+        XCTAssertEqual(analytics.events, ["account_deleted"])
+        XCTAssertEqual(analytics.properties.first?["status"], "deletion_in_progress")
+    }
 }
 
 private final class AnalyticsSpy {
     private(set) var events: [String] = []
+    private(set) var properties: [[String: String]] = []
 
     lazy var tracker = TemplateProductAnalytics(
         configuration: TemplatePostHogConfiguration(
             apiKey: "ph_test",
             host: URL(string: "https://app.posthog.com")!
         )
-    ) { [weak self] event, _ in
+    ) { [weak self] event, properties in
         self?.events.append(event)
+        self?.properties.append(properties)
     }
 }
 
@@ -200,6 +242,7 @@ private final class StubCommandService: TemplateCommandServicing {
     var submittedCommands: [TemplateConvexCommandRequest] = []
     var transcriptionRequests: [TemplateVoiceTranscriptionRequest] = []
     var deleteAccountCallCount = 0
+    var deleteAccountResult: TemplateDeleteAccountResult?
     var submitResult = TemplateCommandResult(summary: "Created entry.", entries: [])
     var submitError: TemplateServiceError?
     var transcriptionResult = TemplateVoiceTranscriptionResult(transcript: "")
@@ -223,6 +266,9 @@ private final class StubCommandService: TemplateCommandServicing {
 
     func deleteAccount() async throws -> TemplateDeleteAccountResult {
         deleteAccountCallCount += 1
+        if let deleteAccountResult {
+            return deleteAccountResult
+        }
         return .deleted(
             deleted: .init(
                 profiles: 0,
