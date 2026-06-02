@@ -1,23 +1,18 @@
 # Template Backlog Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use `.agents/skills/execute-work` or `superpowers:executing-plans` to implement one task branch at a time. Use `.agents/skills/ship-work` before opening or updating PRs. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use `.agents/skills/execute-work` to implement one task branch at a time. Use `.agents/skills/ship-work` before opening or updating PRs. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Move reusable lessons from the prototype snapshot into the template through small, reviewable PRs while keeping journal/reflection product work out of the starter.
 
-**Architecture:** Treat `origin/main` as the template source of truth. Use the local `ambisrc/prototype-template-app` branch at commit `c9b4265` only as reference material, then reimplement generic slices on fresh branches from `origin/main`. Keep each slice independently buildable and easy to revert.
+**Architecture:** Treat the default branch as the template source of truth. Use prototype work only as reference material, then reimplement generic slices on fresh template branches. Keep each slice independently buildable and easy to revert.
 
 **Tech Stack:** SwiftUI, Xcode project settings, Convex Swift, Convex TypeScript, XCTest, Vitest, shared public-action fixtures.
 
 ---
 
-## Reference State
+## Reference Guidance
 
-- Prototype reference branch: `ambisrc/prototype-template-app`
-- Prototype snapshot commit: `c9b4265 wip: snapshot prototype template exploration`
-- Local-only prototype noise stash: `stash@{0}` named `local prototype brainstorm and xcode user state`
-- Base branch for template PRs: `origin/main`
-
-Do not merge the prototype branch directly. Use it for selective diff inspection only.
+Do not merge prototype work directly into the template. Use prototype diffs only for selective inspection, then reimplement reusable pieces from the template base branch.
 
 ## Scope Rules
 
@@ -41,8 +36,7 @@ Prototype-specific:
 
 ### node.ios-config
 
-- `status`: done locally on branch `ambisrc/template-ios-config`
-- `commit`: `5044b6c chore: route iOS deployment URL through xcconfig`
+- `status`: ready to ship in the first template PR
 - `purpose`: keep live Convex deployment URLs out of tracked plist files.
 - `verification`:
   - `plutil -lint ios/Info.plist`
@@ -53,7 +47,7 @@ Prototype-specific:
 ### node.runtime-convex-auth
 
 - `status`: pending
-- `branch`: create from `origin/main` after `node.ios-config` lands or rebase onto it if needed.
+- `branch`: create from the latest template base branch after `node.ios-config` lands or rebase onto it if needed.
 - `purpose`: add generic live Swift runtime wiring for Convex and Apple Sign In.
 - `files`:
   - `VoiceAgentTemplate.xcodeproj/project.pbxproj`
@@ -78,7 +72,7 @@ Prototype-specific:
 ### node.entry-contracts
 
 - `status`: pending
-- `branch`: create from latest `main` after previous PRs land.
+- `branch`: create from the latest template base branch after previous PRs land.
 - `purpose`: make starter entries editable through stable public contracts.
 - `files`:
   - `convex/_generated/ai/guidelines.md` read first
@@ -103,7 +97,7 @@ Prototype-specific:
 ### node.plain-transcript-command
 
 - `status`: pending
-- `branch`: create from latest `main`.
+- `branch`: create from the latest template base branch.
 - `purpose`: make the starter voice loop save plain non-empty transcripts without requiring command grammar.
 - `files`:
   - `convex/_generated/ai/guidelines.md` read first
@@ -122,7 +116,7 @@ Prototype-specific:
 ### node.account-deletion-extension-guide
 
 - `status`: pending
-- `branch`: create from latest `main`.
+- `branch`: create from the latest template base branch.
 - `purpose`: make it hard to add new owner-owned tables without updating deletion contracts, Swift decoders, and fixtures.
 - `files`:
   - `docs/architecture.md`
@@ -141,8 +135,7 @@ Prototype-specific:
 
 ## Working Rules
 
-- Start each implementation branch from `origin/main` unless building directly on a landed prior PR.
+- Start each implementation branch from the latest template base branch unless building directly on a landed prior PR.
 - Keep PRs small enough to review independently.
-- Run `git diff origin/main...` before opening each PR and remove prototype-specific values.
-- Keep `ambisrc/prototype-template-app` as reference only.
+- Run a base-branch diff before opening each PR and remove prototype-specific values.
 - Record exact verification evidence in each PR body.
