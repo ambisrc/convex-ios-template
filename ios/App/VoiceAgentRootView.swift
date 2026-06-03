@@ -62,6 +62,7 @@ struct VoiceAgentRootView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(entry.body)
                                 .font(.body)
+                                .accessibilityIdentifier("\(TemplateAccessibility.entryBodyPrefix).\(entry.id)")
                             Text(entry.source.rawValue)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)

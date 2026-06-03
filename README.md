@@ -22,8 +22,10 @@ generic operation, and server-owned mutations persist an entry.
 - Fetch-based Sentry and PostHog hooks that skip safely when env vars are
   absent. PostHog can request person deletion; Sentry records a best-effort
   account-cleanup report instead of claiming user deletion.
-- Focused Convex tests for command execution, account deletion, voice payload
-  limits, and analytics payload privacy.
+- Shared Swift/Convex public-contract fixtures for command, voice, account
+  deletion, entry list, and entry update seams.
+- Focused tests for command execution, account deletion, voice payload limits,
+  contract fixture drift, analytics payload privacy, and Swift service seams.
 
 ## Excludes
 
@@ -41,13 +43,16 @@ generic operation, and server-owned mutations persist an entry.
    domain replacement points, generated-file policy, and verification.
 3. Copy `.env.example` to a gitignored local env file and fill local values.
 4. Configure Convex deployment env vars separately from local machine secrets.
-5. Run `npx convex ai-files install` after cloning if
+5. Run `npm run verify:template` to confirm local env files are ignored and no
+   tracked template file contains live-looking secrets or stale source-app
+   setup paths.
+6. Run `npx convex ai-files install` after cloning if
    `convex/_generated/ai/guidelines.md` is absent or stale.
-6. Run backend verification:
+7. Run backend verification:
 
 ```sh
-npx vitest run convex
-npx tsc -p convex/tsconfig.json
+npm test
+npm run typecheck:convex
 ```
 
 Root YapTask Convex commands are separate from this template-local backend.
@@ -74,6 +79,11 @@ gitignored local overrides in `ios/Local.xcconfig`; `ios/Info.plist` expands
 that value at build time. `POSTHOG_API_KEY` and `POSTHOG_HOST` remain in
 `ios/Info.plist` for the starter. Server-side Convex functions read Apple,
 Groq, Sentry, and PostHog cleanup values from Convex deployment env vars.
+
+For credential-free visual smoke checks, build and install the app on a
+simulator, then launch fixture states such as `--template-signed-in`,
+`--template-voice-fallback`, and `--template-deletion-progress` before taking
+screenshots.
 
 ## Top-Level Docs
 

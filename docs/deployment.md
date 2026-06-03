@@ -12,9 +12,25 @@ Use `.env.example` as a variable index only. Do not commit live values.
 3. Link a clone-owned Convex deployment and set `CONVEX_DEPLOYMENT`.
 4. Set Convex deployment env vars with `npx convex env set`; do not put server
    secrets in Swift, Info.plist, or tracked docs.
-5. Run `npx convex ai-files install` if
+5. Run `npm run verify:template` before sharing the clone or opening a setup
+   PR.
+6. Run `npx convex ai-files install` if
    `convex/_generated/ai/guidelines.md` is missing.
-6. Run `npx convex codegen` after function, schema, or validator changes.
+7. Run `npx convex codegen` after function, schema, or validator changes.
+
+## Readiness Check
+
+Run the template readiness check from the repository root:
+
+```sh
+npm run verify:template
+```
+
+The check verifies that `.env`, `.env.local`, and `ios/Local.xcconfig` are
+ignored, then scans the tracked cloneable template surface for Apple private
+key material, Apple `.p8` files, source-app deployment IDs, source-app Xcode
+project paths, and live-looking `API_KEY`, `TOKEN`, `SECRET`, or `DSN`
+assignments. Placeholder values in `.env.example` are allowed.
 
 ## Convex
 
@@ -84,7 +100,8 @@ error and rerun after repairing or replacing the simulator.
 The public Swift/Convex contract is checked by
 [../tests/fixtures/public-actions.json](../tests/fixtures/public-actions.json).
 Update the fixture whenever a clone changes public action/query names, request
-shapes, response status values, or read-list response fields.
+shapes, response status values, read-list response fields, or mutation DTOs
+such as the starter `entries:updateEntry` seam.
 
 ## Account Cleanup
 

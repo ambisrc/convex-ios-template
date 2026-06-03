@@ -3,6 +3,43 @@ import XCTest
 
 @MainActor
 final class VoiceAgentTemplateModelTests: XCTestCase {
+    func testSignedInLaunchFixtureBuildsDeterministicSmokeState() {
+        let sentryScope = TemplateSentryUserScope()
+        let model = VoiceAgentTemplateModel(
+            sessionService: StubSessionService(result: .success(TemplateSession(ownerKey: "test|owner"))),
+            commandService: StubCommandService(),
+            voiceCapture: StubVoiceCapture(),
+            analytics: TemplateProductAnalytics(configuration: nil),
+            sentryScope: sentryScope,
+            launchArguments: ["VoiceAgentTemplate", "--template-signed-in"]
+        )
+
+        XCTAssertTrue(model.isSignedIn)
+        XCTAssertEqual(sentryScope.ownerKey, "fixture-owner")
+        XCTAssertEqual(model.entries, [
+            Entry(id: "fixture-typed", body: "Draft launch announcement", source: .typed),
+            Entry(id: "fixture-voice", body: "Follow up from voice note", source: .voice),
+        ])
+    }
+
+    func testDeletionProgressLaunchFixtureBuildsSignedOutFeedbackState() {
+        let model = VoiceAgentTemplateModel(
+            sessionService: StubSessionService(result: .success(TemplateSession(ownerKey: "test|owner"))),
+            commandService: StubCommandService(),
+            voiceCapture: StubVoiceCapture(),
+            analytics: TemplateProductAnalytics(configuration: nil),
+            sentryScope: TemplateSentryUserScope(),
+            launchArguments: ["VoiceAgentTemplate", "--template-deletion-progress"]
+        )
+
+        XCTAssertFalse(model.isSignedIn)
+        XCTAssertTrue(model.entries.isEmpty)
+        XCTAssertEqual(
+            model.feedbackMessage,
+            "Account deletion is in progress. Your data will be removed shortly."
+        )
+    }
+
     func testSignInBindsSessionScopeAndCapturesAnalytics() async {
         let sentryScope = TemplateSentryUserScope()
         let analytics = AnalyticsSpy()

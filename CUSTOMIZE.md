@@ -70,6 +70,8 @@ is consumed by both Vitest and XCTest. It covers:
   response, and `configuration_missing` response union.
 - `commands:deleteAccount` action name and starter deletion response shape.
 - `entries:listEntries` read seam name and projected public DTO shape.
+- `entries:updateEntry` mutation seam name, request shape, and projected public
+  DTO shape.
 
 When a clone changes action names, request fields, response status values, or
 domain result shapes, update this fixture in the same change as the backend and
@@ -97,31 +99,65 @@ Keep `convex/commands.ts` as orchestration for auth, trusted public actions,
 provider calls, and apply-layer handoff. Do not bury clone-specific parsing
 directly in the public action once the domain grows beyond the starter example.
 
+## Replace The Entries Domain
+
+Use this order when turning the sample `entries` model into clone-owned domain
+objects:
+
+1. Write the domain terms in [CONTEXT.md](CONTEXT.md) before renaming code.
+2. Replace `convex/schema.ts`, `convex/lib/operations.ts`,
+   `convex/lib/commandInterpreter.ts`, `convex/lib/apply.ts`, and
+   `convex/entries.ts` together so validated operations, server-owned writes,
+   and public read/mutation DTOs stay aligned.
+3. Keep assistant-driven writes entering through
+   `convex/commands.ts:submitCommand`; derive ownership through Convex auth and
+   do not add client-supplied user IDs.
+4. Update [tests/fixtures/public-actions.json](tests/fixtures/public-actions.json)
+   for every changed public action, query, mutation, request body, response
+   union, and DTO field.
+5. Update Swift mirrors in `ios/Core/TemplateBackendContract.swift`,
+   endpoint routing in `ios/Core/TemplateBackendClient.swift`, and model state
+   projection in `ios/App/VoiceAgentTemplateModel.swift`.
+6. When adding an owner-owned table, extend account deletion in the same change:
+   update `convex/account.ts`, `accountDeletionOwnedTableNames` and
+   validators in `convex/lib/accountDeletionContract.ts`, delete-account
+   fixture counts, and `TemplateDeleteAccountResult.DeletedCounts`.
+7. Add or update stable accessibility identifiers and fixture launch arguments
+   only for smokeable states the clone can render without live credentials.
+8. Run the verification block below before handing the clone to an app team.
+
 ## Verification
 
 Run from the template root:
 
 ```sh
+npm run verify:template
 npm test
 npm run typecheck:convex
 npx convex codegen
 xcodebuild test -project VoiceAgentTemplate.xcodeproj -scheme VoiceAgentTemplate -destination 'platform=iOS Simulator,OS=18.5,name=iPhone 16'
 ```
 
+`npm run verify:template` checks that local env files stay ignored and that the
+cloneable template surface does not track Apple private key material,
+source-app deployment IDs, source-app Xcode project paths, or live-looking
+secret assignments. It intentionally allows placeholders in `.env.example` and
+documented public example values.
+
 Substitute an installed simulator if your local Xcode does not include iOS 18.5
 or iPhone 16. `xcrun simctl list devices available` shows available
 destinations.
 
-Run from the repository root while this directory still lives inside YapTask:
+For visual smoke evidence after a successful build, install the simulator app
+and launch fixture states that do not require live Apple Sign In, microphone
+permission, or Convex credentials:
 
 ```sh
-npm run docs:links
-rg -n "VoiceAgentTemplate|Template|com\\.example|example\\.convex\\.cloud|your-convex-deployment|yaptask\\.xcodeproj" templates/voice-agent-ios-convex --glob '!node_modules/**'
-! rg -n "yaptask\\.xcodeproj" templates/voice-agent-ios-convex --glob '!node_modules/**'
-git check-ignore -v templates/voice-agent-ios-convex/.env.example || true
-rg --pcre2 -n "(API_KEY|TOKEN|SECRET|DSN)=((?!replace-with|<|https://public-key@|00000).)+" templates/voice-agent-ios-convex --glob '!node_modules/**' || true
+xcrun simctl install "iPhone 16" "<path-to-built VoiceAgentTemplate.app>"
+xcrun simctl launch --terminate-running-process "iPhone 16" com.example.voiceagent.template --template-signed-in
+xcrun simctl io "iPhone 16" screenshot .context/template-signed-in.png
+xcrun simctl launch --terminate-running-process "iPhone 16" com.example.voiceagent.template --template-voice-fallback
+xcrun simctl io "iPhone 16" screenshot .context/template-voice-fallback.png
+xcrun simctl launch --terminate-running-process "iPhone 16" com.example.voiceagent.template --template-deletion-progress
+xcrun simctl io "iPhone 16" screenshot .context/template-deletion-progress.png
 ```
-
-The placeholder inventory command is a review aid. It should show intentional
-template placeholders until the clone is renamed. The stale source-app project
-reference command must produce no hits.

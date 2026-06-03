@@ -42,7 +42,8 @@ replace that module rather than growing app-specific parsing inside
 Both backend and iOS tests consume
 `tests/fixtures/public-actions.json`. The fixture is the audit point for
 public action names, request bodies, success responses, voice configuration
-unions, account deletion, and the starter `entries:listEntries` read seam.
+unions, account deletion, the starter `entries:listEntries` read seam, and the
+starter `entries:updateEntry` mutation seam.
 
 Stable contract:
 
@@ -50,6 +51,7 @@ Stable contract:
 - `commands:transcribeVoiceCommand`
 - `commands:deleteAccount`
 - `entries:listEntries`
+- `entries:updateEntry`
 - Swift mirrors in `ios/Core/TemplateBackendContract.swift`,
   `ios/Core/TemplateBackendClient.swift`, and
   `ios/Core/TemplateConvexCommandRequest.swift`

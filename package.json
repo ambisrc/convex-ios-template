@@ -3,8 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "vitest run convex",
-    "typecheck:convex": "tsc -p convex/tsconfig.json"
+    "test": "vitest run convex scripts",
+    "test:convex": "vitest run convex",
+    "typecheck:convex": "tsc -p convex/tsconfig.json",
+    "verify:template": "node scripts/verify-template-readiness.mjs"
   },
   "dependencies": {
     "convex": "^1.37.0",

@@ -142,6 +142,11 @@ final class VoiceAgentTemplateModel: ObservableObject {
     }
 
     private func applyLaunchFixture(arguments: [String]) {
+        if arguments.contains("--template-deletion-progress") {
+            feedbackMessage = "Account deletion is in progress. Your data will be removed shortly."
+            return
+        }
+
         guard arguments.contains("--template-signed-in")
             || arguments.contains("--template-voice-fallback")
             || arguments.contains("--template-settings")
