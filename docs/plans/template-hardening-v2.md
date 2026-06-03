@@ -340,7 +340,7 @@ Safe concurrency:
 
 - `id`: `node.ship-series`
 - `mode`: shipping
-- `status`: in_progress
+- `status`: blocked
 - `owner_type`: agent
 - `executor`: `.agents/skills/ship-work`
 - `planned_write_scope`:
@@ -363,24 +363,31 @@ Safe concurrency:
     evidence: `47 tests passed, 0 failures; xcresult Test-VoiceAgentTemplate-2026.06.02_20-54-13--0700.xcresult`
     attempts: 1
   - command: `gh pr checks <pr-number>`
-    status: pending
-    evidence: none
-    attempts: 0
+    status: blocked
+    evidence: `gh pr checks 10` reports CodeRabbit pending, Greptile Review pending, and claude-review pending; PR is otherwise mergeable
+    attempts: 3
 - `human_gates`: PR review if repository policy requires human approval.
 - `notes`:
   - Open separate PRs per node if the implementation becomes review-heavy.
   - Merge only after review comments, checks, and Delivery Map evidence are
     reconciled.
 - `todos`: none
-- `issues_found`: none
+- `issues_found`:
+  - `origin`: discovered_during_shipping
+    `issue`: External review/check contexts remained pending after polling.
+    `owner`: GitHub review/check providers.
+    `next`: Rerun `gh pr checks 10` and inspect comments/reviews once CodeRabbit, Greptile, and claude-review finish.
 - `actual_changed_paths`:
   - `docs/plans/template-hardening-v2.md`
-  - PR body/checklist pending PR creation
+  - PR body/checklist
 - `actual_evidence`:
   - local gate: `npm test` passed 7 files and 29 tests
   - local gate: `npm run typecheck:convex` passed
   - local gate: `xcodebuild test -project VoiceAgentTemplate.xcodeproj -scheme VoiceAgentTemplate -destination 'platform=iOS Simulator,OS=18.5,name=iPhone 16'` passed 47 tests
-  - PR/check evidence pending PR creation
+  - PR: https://github.com/ambimake/convex-ios-template/pull/10
+  - PR state: open, not draft, mergeable
+  - review triage: CodeRabbit and Qodo comments were summaries/in-progress notices with no actionable feedback; no reviews submitted
+  - blocked check evidence: CodeRabbit pending, Greptile Review pending, claude-review pending
 - `next`: terminal
 
 ## Durable Documentation Impact
