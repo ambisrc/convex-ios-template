@@ -68,16 +68,16 @@ struct TemplateConfiguredSessionService: TemplateSessionServicing {
 }
 
 struct TemplateVoiceCaptureService: TemplateVoiceCapturing {
+    private let dependencies: TemplateVoiceCaptureEngineDependencies
+
+    init(dependencies: TemplateVoiceCaptureEngineDependencies = TemplateVoiceCaptureDependencies.live()) {
+        self.dependencies = dependencies
+    }
+
     func captureAudio(permission: TemplateMicrophonePermission) async throws -> TemplateVoiceAudio {
-        switch TemplateVoiceCaptureState.start(permission: permission) {
-        case .recording:
-            throw TemplateServiceError.missingConfiguration(
-                "Connect AVAudioRecorder output before calling commands:transcribeVoiceCommand."
-            )
-        case .typedFallback(let reason):
-            throw TemplateServiceError.missingConfiguration(reason)
-        case .idle, .submitted:
-            throw TemplateServiceError.failed("Voice capture is not ready.")
-        }
+        try await TemplateVoiceCaptureEngine.captureAudio(
+            permission: permission,
+            dependencies: dependencies
+        )
     }
 }

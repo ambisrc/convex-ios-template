@@ -169,11 +169,13 @@ Stable contract:
   `TemplateConvexCalling` seam when live wiring is present.
 - `PlaceholderTemplateBackendClient` fails with explicit configuration messages
   until the clone wires real SDK clients.
-- `TemplateVoiceCapturing` owns local audio capture.
+- `TemplateVoiceCapturing` owns local audio capture via
+  `TemplateVoiceCaptureEngine` (AVAudioRecorder, 3s AAC/m4a clip, temp-file
+  cleanup, 512 KB raw cap before base64 encoding).
 
 Clone-owned replacement points:
 
 - Apple auth implementation;
 - Convex Swift client action/query calls behind `TemplateConvexCalling`;
-- AVAudioRecorder or alternate capture implementation;
+- alternate capture duration, codec, or permission UX;
 - app-specific state projection in `VoiceAgentTemplateModel`.
