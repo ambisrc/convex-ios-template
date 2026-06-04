@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0A1B2C3D4E5F60718293B007 /* TemplateVoiceCaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F70819293B007 /* TemplateVoiceCaptureEngine.swift */; };
+		0A1B2C3D4E5F60718293B008 /* TemplateMicrophonePermissionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F70819293B008 /* TemplateMicrophonePermissionService.swift */; };
+		0A1B2C3D4E5F60718293B009 /* TemplateVoiceCaptureServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F70819293B009 /* TemplateVoiceCaptureServiceTests.swift */; };
 		01411A6DA08908982F58B373 /* VoiceAgentRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 751EE85CA8A8D4AFC5F51313 /* VoiceAgentRootView.swift */; };
 		02CFD966EF95D97800D7B7A9 /* TemplateSentryUserScopeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8273B897F04C85B9FAA00E08 /* TemplateSentryUserScopeTests.swift */; };
 		0A1B2C3D4E5F60718293B001 /* TemplateConvexArgumentDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F70819293B001 /* TemplateConvexArgumentDecoder.swift */; };
@@ -60,6 +63,9 @@
 		1A2B3C4D5E6F70819293B004 /* TemplateAppleAuthProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TemplateAppleAuthProvider.swift; path = ios/Core/TemplateAppleAuthProvider.swift; sourceTree = "<group>"; };
 		1A2B3C4D5E6F70819293B005 /* TemplateConvexLiveCaller.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TemplateConvexLiveCaller.swift; path = ios/Core/TemplateConvexLiveCaller.swift; sourceTree = "<group>"; };
 		1A2B3C4D5E6F70819293B006 /* TemplateRuntimeServices.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TemplateRuntimeServices.swift; path = ios/Core/TemplateRuntimeServices.swift; sourceTree = "<group>"; };
+		1A2B3C4D5E6F70819293B007 /* TemplateVoiceCaptureEngine.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TemplateVoiceCaptureEngine.swift; path = ios/Core/TemplateVoiceCaptureEngine.swift; sourceTree = "<group>"; };
+		1A2B3C4D5E6F70819293B008 /* TemplateMicrophonePermissionService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TemplateMicrophonePermissionService.swift; path = ios/Core/TemplateMicrophonePermissionService.swift; sourceTree = "<group>"; };
+		1A2B3C4D5E6F70819293B009 /* TemplateVoiceCaptureServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TemplateVoiceCaptureServiceTests.swift; path = ios/Tests/TemplateVoiceCaptureServiceTests.swift; sourceTree = "<group>"; };
 		3D0232184BEA0A9ACD700477 /* VoiceAgentTemplateTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VoiceAgentTemplateTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4C138FBA3148B07B2F58B794 /* VoiceAgentTemplateApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VoiceAgentTemplateApp.swift; path = ios/App/VoiceAgentTemplateApp.swift; sourceTree = "<group>"; };
 		4E327381129D84860DA8E402 /* TemplateServices.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TemplateServices.swift; path = ios/Core/TemplateServices.swift; sourceTree = "<group>"; };
@@ -125,6 +131,8 @@
 				1A2B3C4D5E6F70819293B004 /* TemplateAppleAuthProvider.swift */,
 				1A2B3C4D5E6F70819293B005 /* TemplateConvexLiveCaller.swift */,
 				1A2B3C4D5E6F70819293B006 /* TemplateRuntimeServices.swift */,
+				1A2B3C4D5E6F70819293B007 /* TemplateVoiceCaptureEngine.swift */,
+				1A2B3C4D5E6F70819293B008 /* TemplateMicrophonePermissionService.swift */,
 				82110CE0C04E5DFD5450227C /* TemplateAccessibility.swift */,
 				721FB09E1CB235CCDD439AFC /* TemplateConvexCommandRequest.swift */,
 				B2C3D4E5F60718293A4B5C6D /* TemplateBackendContract.swift */,
@@ -143,6 +151,7 @@
 				B6F4B14117806E9A52AA8A47 /* TemplateProductAnalyticsTests.swift */,
 				8273B897F04C85B9FAA00E08 /* TemplateSentryUserScopeTests.swift */,
 				90EFDB8C57F54B03B71187B1 /* TemplateVoiceCaptureStateTests.swift */,
+				1A2B3C4D5E6F70819293B009 /* TemplateVoiceCaptureServiceTests.swift */,
 				067082FDED8496D9A210386C /* VoiceAgentTemplateModelTests.swift */,
 			);
 			name = ios;
@@ -279,6 +288,8 @@
 				0A1B2C3D4E5F60718293B004 /* TemplateAppleAuthProvider.swift in Sources */,
 				0A1B2C3D4E5F60718293B005 /* TemplateConvexLiveCaller.swift in Sources */,
 				0A1B2C3D4E5F60718293B006 /* TemplateRuntimeServices.swift in Sources */,
+				0A1B2C3D4E5F60718293B007 /* TemplateVoiceCaptureEngine.swift in Sources */,
+				0A1B2C3D4E5F60718293B008 /* TemplateMicrophonePermissionService.swift in Sources */,
 				971ECEBCFC3771A82133B4A2 /* TemplateAccessibility.swift in Sources */,
 				86BC5593CB7FE5FABE41B26B /* TemplateConvexCommandRequest.swift in Sources */,
 				A1B2C3D4E5F60718293A4B5C /* TemplateBackendContract.swift in Sources */,
@@ -302,6 +313,7 @@
 				867CDC53F8DD269FD8F0ADA8 /* TemplateProductAnalyticsTests.swift in Sources */,
 				02CFD966EF95D97800D7B7A9 /* TemplateSentryUserScopeTests.swift in Sources */,
 				E29259DBFFB66F2314113DB2 /* TemplateVoiceCaptureStateTests.swift in Sources */,
+				0A1B2C3D4E5F60718293B009 /* TemplateVoiceCaptureServiceTests.swift in Sources */,
 				9AF0E3796ADA69D800110539 /* VoiceAgentTemplateModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

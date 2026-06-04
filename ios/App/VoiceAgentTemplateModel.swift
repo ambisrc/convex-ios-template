@@ -12,6 +12,7 @@ final class VoiceAgentTemplateModel: ObservableObject {
     private let sessionService: TemplateSessionServicing
     private let commandService: TemplateCommandServicing
     private let voiceCapture: TemplateVoiceCapturing
+    private let microphonePermission: TemplateMicrophonePermissionProviding
     private let analytics: TemplateProductAnalytics
     private let sentryScope: TemplateSentryUserScope
 
@@ -19,6 +20,7 @@ final class VoiceAgentTemplateModel: ObservableObject {
         sessionService: TemplateSessionServicing = TemplateRuntimeServices.makeSessionService(),
         commandService: TemplateCommandServicing = TemplateRuntimeServices.makeCommandService(),
         voiceCapture: TemplateVoiceCapturing = TemplateVoiceCaptureService(),
+        microphonePermission: TemplateMicrophonePermissionProviding = TemplateAVAudioSessionPermissionService(),
         analytics: TemplateProductAnalytics = TemplateProductAnalytics(configuration: .fromBundle()),
         sentryScope: TemplateSentryUserScope = TemplateSentryUserScope(),
         launchArguments: [String] = ProcessInfo.processInfo.arguments
@@ -26,6 +28,7 @@ final class VoiceAgentTemplateModel: ObservableObject {
         self.sessionService = sessionService
         self.commandService = commandService
         self.voiceCapture = voiceCapture
+        self.microphonePermission = microphonePermission
         self.analytics = analytics
         self.sentryScope = sentryScope
         applyLaunchFixture(arguments: launchArguments)
@@ -59,7 +62,13 @@ final class VoiceAgentTemplateModel: ObservableObject {
         }
     }
 
-    func startVoiceCommand(permission: TemplateMicrophonePermission = .granted) async {
+    func startVoiceCommand(permission overridePermission: TemplateMicrophonePermission? = nil) async {
+        let permission: TemplateMicrophonePermission
+        if let overridePermission {
+            permission = overridePermission
+        } else {
+            permission = await microphonePermission.requestPermission()
+        }
         voiceState = TemplateVoiceCaptureState.start(permission: permission)
         guard case .recording = voiceState else {
             analytics.capture("voice_fallback_selected", properties: ["reason": voiceState.fallbackReason ?? "unknown"])

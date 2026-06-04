@@ -137,7 +137,7 @@ final class VoiceAgentTemplateModelTests: XCTestCase {
             launchArguments: []
         )
 
-        await model.startVoiceCommand()
+        await model.startVoiceCommand(permission: .granted)
 
         XCTAssertEqual(commandService.transcriptionRequests, [
             TemplateVoiceTranscriptionRequest(audioBase64: "dGVzdA==", mimeType: "audio/m4a"),
@@ -150,6 +150,21 @@ final class VoiceAgentTemplateModelTests: XCTestCase {
         XCTAssertEqual(model.entries.map(\.id), ["entry-voice"])
     }
 
+    func testVoiceCommandFallsBackWhenMicrophonePermissionDenied() async {
+        let model = VoiceAgentTemplateModel(
+            sessionService: StubSessionService(result: .success(TemplateSession(ownerKey: "test|owner"))),
+            commandService: StubCommandService(),
+            voiceCapture: StubVoiceCapture(audio: TemplateVoiceAudio(audioBase64: "dGVzdA==", mimeType: "audio/m4a")),
+            analytics: TemplateProductAnalytics(configuration: nil),
+            sentryScope: TemplateSentryUserScope(),
+            launchArguments: []
+        )
+
+        await model.startVoiceCommand(permission: .denied)
+
+        XCTAssertEqual(model.voiceState, .typedFallback(reason: "permission_denied"))
+    }
+
     func testVoiceCommandUsesSpecificTypedFallbackReasonForCaptureFailures() async {
         let model = VoiceAgentTemplateModel(
             sessionService: StubSessionService(result: .success(TemplateSession(ownerKey: "test|owner"))),
@@ -160,7 +175,7 @@ final class VoiceAgentTemplateModelTests: XCTestCase {
             launchArguments: []
         )
 
-        await model.startVoiceCommand()
+        await model.startVoiceCommand(permission: .granted)
 
         XCTAssertEqual(model.voiceState.fallbackReason, "audio_capture_failed")
     }
@@ -178,7 +193,7 @@ final class VoiceAgentTemplateModelTests: XCTestCase {
             launchArguments: []
         )
 
-        await model.startVoiceCommand()
+        await model.startVoiceCommand(permission: .granted)
 
         XCTAssertEqual(model.voiceState.fallbackReason, "config_missing")
     }
@@ -197,7 +212,7 @@ final class VoiceAgentTemplateModelTests: XCTestCase {
             launchArguments: []
         )
 
-        await model.startVoiceCommand()
+        await model.startVoiceCommand(permission: .granted)
 
         XCTAssertEqual(model.voiceState.fallbackReason, "command_submission_failed")
     }

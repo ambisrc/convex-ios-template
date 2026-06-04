@@ -12,4 +12,18 @@ final class TemplateVoiceCaptureStateTests: XCTestCase {
             .typedFallback(reason: "permission_denied")
         )
     }
+
+    func testMicrophoneRestrictedMapsToTypedFallback() {
+        XCTAssertEqual(
+            TemplateVoiceCaptureState.start(permission: .restricted),
+            .typedFallback(reason: "permission_restricted")
+        )
+    }
+
+    func testMicrophoneUnavailableMapsToTypedFallback() {
+        XCTAssertEqual(
+            TemplateVoiceCaptureState.start(permission: .unavailable),
+            .typedFallback(reason: "audio_unavailable")
+        )
+    }
 }
