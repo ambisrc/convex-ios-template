@@ -6,7 +6,8 @@ final class TemplateVoiceCaptureServiceTests: XCTestCase {
         let audioBytes = Data("fake-audio-bytes".utf8)
         let fileManager = FakeVoiceCaptureFileManager(initialData: audioBytes)
         let recorder = FakeVoiceRecorder()
-        let dependencies = makeDependencies(fileManager: fileManager, recorder: recorder)
+        let session = FakeVoiceCaptureSession()
+        let dependencies = makeDependencies(fileManager: fileManager, recorder: recorder, session: session)
 
         let audio = try await TemplateVoiceCaptureEngine.captureAudio(
             permission: .granted,
@@ -17,6 +18,7 @@ final class TemplateVoiceCaptureServiceTests: XCTestCase {
         XCTAssertEqual(audio.mimeType, "audio/m4a")
         XCTAssertEqual(Data(base64Encoded: audio.audioBase64), audioBytes)
         XCTAssertTrue(recorder.stopCalled)
+        XCTAssertTrue(session.deactivateCalled)
         XCTAssertFalse(fileManager.fileExists(at: fileManager.lastRecordingURL))
     }
 
@@ -99,6 +101,25 @@ final class TemplateVoiceCaptureServiceTests: XCTestCase {
         XCTAssertTrue(fileManager.removedURLs.contains(fileManager.lastRecordingURL))
     }
 
+    func testRecorderFailureDeactivatesSession() async {
+        let session = FakeVoiceCaptureSession()
+        let dependencies = makeDependencies(
+            fileManager: FakeVoiceCaptureFileManager(initialData: Data("clip".utf8)),
+            recorder: FakeVoiceRecorder(prepareResult: false),
+            session: session
+        )
+
+        do {
+            _ = try await TemplateVoiceCaptureEngine.captureAudio(
+                permission: .granted,
+                dependencies: dependencies
+            )
+            XCTFail("Expected recorder preparation failure")
+        } catch {
+            XCTAssertTrue(session.deactivateCalled)
+        }
+    }
+
     func testEncodedAudioStaysWithinBackendRawByteCap() async throws {
         let audioBytes = Data(repeating: 0xAB, count: 512_000)
         let dependencies = makeDependencies(
@@ -141,14 +162,17 @@ final class TemplateVoiceCaptureServiceTests: XCTestCase {
     private func makeDependencies(
         fileManager: FakeVoiceCaptureFileManager,
         recorder: FakeVoiceRecorder,
+        session: FakeVoiceCaptureSession = FakeVoiceCaptureSession(),
         maxRawBytes: Int = 512_000
     ) -> TemplateVoiceCaptureEngineDependencies {
         TemplateVoiceCaptureEngineDependencies(
             makeRecorder: { _, _ in recorder },
-            configureSession: {},
+            configureSession: { session.configureCalled = true },
+            deactivateSession: { session.deactivateCalled = true },
             fileManager: fileManager,
             delay: FakeVoiceCaptureDelay(),
             recordingDuration: 0.1,
+            postStopFlushDelay: 0,
             maxRawBytes: maxRawBytes,
             mimeType: "audio/m4a",
             recorderSettings: [:]
@@ -186,6 +210,11 @@ private final class FakeVoiceRecorder: TemplateVoiceRecording {
     }
 
     func deleteRecording() -> Bool { true }
+}
+
+private final class FakeVoiceCaptureSession {
+    var configureCalled = false
+    var deactivateCalled = false
 }
 
 private final class FakeVoiceCaptureFileManager: TemplateVoiceCaptureFileManaging {

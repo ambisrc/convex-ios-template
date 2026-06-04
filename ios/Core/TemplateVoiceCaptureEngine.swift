@@ -3,6 +3,7 @@ import Foundation
 
 enum TemplateVoiceCaptureConfiguration {
     static let recordingDuration: TimeInterval = 3
+    static let postStopFlushDelay: TimeInterval = 0.05
     static let maxRawBytes = 512_000
     static let mimeType = "audio/m4a"
 
@@ -26,6 +27,7 @@ protocol TemplateVoiceRecording: AnyObject {
 
 protocol TemplateVoiceCaptureSessionConfiguring {
     func configureForRecording() throws
+    func deactivateAfterRecording() throws
 }
 
 protocol TemplateVoiceCaptureFileManaging {
@@ -42,9 +44,11 @@ protocol TemplateVoiceCaptureDelaying {
 struct TemplateVoiceCaptureEngineDependencies {
     var makeRecorder: (URL, [String: Any]) throws -> TemplateVoiceRecording
     var configureSession: () throws -> Void
+    var deactivateSession: () throws -> Void
     var fileManager: TemplateVoiceCaptureFileManaging
     var delay: TemplateVoiceCaptureDelaying
     var recordingDuration: TimeInterval
+    var postStopFlushDelay: TimeInterval
     var maxRawBytes: Int
     var mimeType: String
     var recorderSettings: [String: Any]
@@ -65,6 +69,9 @@ enum TemplateVoiceCaptureEngine {
         }
 
         try dependencies.configureSession()
+        defer {
+            try? dependencies.deactivateSession()
+        }
 
         let recordingURL = dependencies.fileManager.makeTemporaryRecordingURL()
         var recordingFileRemoved = false
@@ -84,6 +91,7 @@ enum TemplateVoiceCaptureEngine {
 
         await dependencies.delay.waitForRecording(duration: dependencies.recordingDuration)
         recorder.stop()
+        await dependencies.delay.waitForRecording(duration: dependencies.postStopFlushDelay)
 
         let audioData = try dependencies.fileManager.readData(at: recordingURL)
         try dependencies.fileManager.removeItem(at: recordingURL)
@@ -105,7 +113,10 @@ enum TemplateVoiceCaptureEngine {
 
 struct TemplateVoiceCaptureSleepDelay: TemplateVoiceCaptureDelaying {
     func waitForRecording(duration: TimeInterval) async {
-        let nanoseconds = UInt64(max(duration, 0) * 1_000_000_000)
+        guard duration > 0, duration.isFinite else { return }
+        let maxSeconds = TimeInterval(UInt64.max / 1_000_000_000)
+        let cappedDuration = min(duration, maxSeconds)
+        let nanoseconds = UInt64(cappedDuration * 1_000_000_000)
         try? await Task.sleep(nanoseconds: nanoseconds)
     }
 }
@@ -113,8 +124,12 @@ struct TemplateVoiceCaptureSleepDelay: TemplateVoiceCaptureDelaying {
 struct TemplateAVAudioSessionConfigurator: TemplateVoiceCaptureSessionConfiguring {
     func configureForRecording() throws {
         let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.playAndRecord, mode: .spokenAudio, options: [.defaultToSpeaker, .allowBluetooth])
+        try session.setCategory(.playAndRecord, mode: .spokenAudio, options: [.defaultToSpeaker, .allowBluetoothHFP])
         try session.setActive(true)
+    }
+
+    func deactivateAfterRecording() throws {
+        try AVAudioSession.sharedInstance().setActive(false, options: [.notifyOthersOnDeactivation])
     }
 }
 
@@ -165,9 +180,13 @@ enum TemplateVoiceCaptureDependencies {
             configureSession: {
                 try TemplateAVAudioSessionConfigurator().configureForRecording()
             },
+            deactivateSession: {
+                try TemplateAVAudioSessionConfigurator().deactivateAfterRecording()
+            },
             fileManager: TemplateVoiceCaptureTemporaryFileManager(),
             delay: TemplateVoiceCaptureSleepDelay(),
             recordingDuration: TemplateVoiceCaptureConfiguration.recordingDuration,
+            postStopFlushDelay: TemplateVoiceCaptureConfiguration.postStopFlushDelay,
             maxRawBytes: TemplateVoiceCaptureConfiguration.maxRawBytes,
             mimeType: TemplateVoiceCaptureConfiguration.mimeType,
             recorderSettings: TemplateVoiceCaptureConfiguration.recorderSettings

@@ -13,7 +13,7 @@ struct TemplateGrantedMicrophonePermissionService: TemplateMicrophonePermissionP
 }
 
 enum TemplateAVAudioSessionPermissionMapper {
-    static func map(_ permission: AVAudioSession.RecordPermission) -> TemplateMicrophonePermission {
+    static func map(_ permission: AVAudioApplication.recordPermission) -> TemplateMicrophonePermission {
         switch permission {
         case .granted:
             return .granted
@@ -28,26 +28,23 @@ enum TemplateAVAudioSessionPermissionMapper {
 }
 
 struct TemplateAVAudioSessionPermissionService: TemplateMicrophonePermissionProviding {
-    private let session: AVAudioSession
-
-    init(session: AVAudioSession = .sharedInstance()) {
-        self.session = session
-    }
-
     func currentPermission() -> TemplateMicrophonePermission {
-        TemplateAVAudioSessionPermissionMapper.map(session.recordPermission)
+        TemplateAVAudioSessionPermissionMapper.map(AVAudioApplication.shared.recordPermission)
     }
 
     func requestPermission() async -> TemplateMicrophonePermission {
-        switch session.recordPermission {
+        switch AVAudioApplication.shared.recordPermission {
         case .granted:
             return .granted
         case .denied:
             return .denied
         case .undetermined:
             return await withCheckedContinuation { continuation in
-                session.requestRecordPermission { granted in
-                    continuation.resume(returning: granted ? .granted : .denied)
+                AVAudioApplication.requestRecordPermission { granted in
+                    let resolvedPermission: TemplateMicrophonePermission = granted
+                        ? .granted
+                        : TemplateAVAudioSessionPermissionMapper.map(AVAudioApplication.shared.recordPermission)
+                    continuation.resume(returning: resolvedPermission)
                 }
             }
         @unknown default:
