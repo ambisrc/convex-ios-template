@@ -18,9 +18,9 @@ struct VoiceAgentRootView: View {
         VStack(spacing: 24) {
             Spacer()
             VStack(spacing: 10) {
-                Text("Voice Agent")
+                Text("Voice Journal")
                     .font(.largeTitle.weight(.semibold))
-                Text("Talk or type. The backend validates the operation before anything is saved.")
+                Text("Speak freely. Your words are saved privately on the backend.")
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -48,50 +48,20 @@ struct VoiceAgentRootView: View {
         .padding()
     }
 
+    @ViewBuilder
     private var signedInView: some View {
-        NavigationStack {
-            List {
-                if model.entries.isEmpty {
-                    ContentUnavailableView(
-                        "No entries",
-                        systemImage: "waveform",
-                        description: Text("Send a typed or voice command to create one.")
-                    )
-                } else {
-                    ForEach(model.entries) { entry in
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(entry.body)
-                                .font(.body)
-                                .accessibilityIdentifier("\(TemplateAccessibility.entryBodyPrefix).\(entry.id)")
-                            Text(entry.source.rawValue)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-                if let feedbackMessage = model.feedbackMessage {
-                    Text(feedbackMessage)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .safeAreaInset(edge: .bottom) {
-                CaptureBar(model: model)
-            }
-            .navigationTitle("Entries")
-            .toolbar {
-                Button {
-                    model.isSettingsPresented = true
-                } label: {
-                    Image(systemName: "gearshape")
-                }
-                .accessibilityLabel("Settings")
-                .accessibilityIdentifier(TemplateAccessibility.settingsOpen)
-            }
-            .sheet(isPresented: $model.isSettingsPresented) {
-                SettingsView(model: model)
+        Group {
+            switch model.screen {
+            case .home:
+                RitualHomeView(model: model)
+            case .brainDump(let prompt):
+                BrainDumpView(model: model, prompt: prompt)
+            case .entryEditor(let entry):
+                EntryEditorView(model: model, entry: entry)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(WatercolorBackgroundView())
     }
 }
 

@@ -9,8 +9,12 @@ describe("public Swift/Convex contract fixture", () => {
       "commands:deleteAccount",
       "commands:submitCommand",
       "commands:transcribeVoiceCommand",
+      "reflections:generateNow",
     ]);
-    expect(Object.keys(publicActions.queries).sort()).toEqual(["entries:listEntries"]);
+    expect(Object.keys(publicActions.queries).sort()).toEqual([
+      "entries:listEntries",
+      "reflections:listLatest",
+    ]);
     expect(Object.keys(publicActions.mutations).sort()).toEqual(["entries:updateEntry"]);
   });
 

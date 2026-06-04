@@ -26,6 +26,7 @@ export const submitCommand = action({
   args: {
     text: v.string(),
     source: commandSourceValidator,
+    promptId: v.optional(v.id("reflectionPrompts")),
   },
   handler: async (ctx, args): Promise<CommandResponse> => {
     return await withSentry("commands:submitCommand", ctx, async () => {
@@ -39,6 +40,7 @@ export const submitCommand = action({
         source: args.source,
         operations,
         summary,
+        promptId: args.promptId,
       });
 
       return {

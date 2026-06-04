@@ -16,6 +16,13 @@ export type ApplyCommandResult = {
   entries: AppliedEntry[];
 };
 
+export type ReflectionPromptPublic = {
+  id: string;
+  question: string;
+  status: "open" | "answered";
+  createdAt: number;
+};
+
 export const applyCommand = internalMutation({
   args: {
     ownerKey: v.string(),
@@ -23,6 +30,7 @@ export const applyCommand = internalMutation({
     source: commandSourceValidator,
     operations: v.array(operationValidator),
     summary: v.string(),
+    promptId: v.optional(v.id("reflectionPrompts")),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -48,11 +56,25 @@ export const applyCommand = internalMutation({
         ownerKey: args.ownerKey,
         body: operation.body,
         source: args.source,
+        promptId: args.promptId,
         createdAt: now,
         updatedAt: now,
       });
       entryIds.push(entryId);
-      entries.push({ id: entryId, body: operation.body, source: args.source });
+      entries.push({
+        id: entryId,
+        body: operation.body,
+        source: args.source,
+      });
+
+      if (args.promptId) {
+        await markReflectionPromptAnswered(ctx, {
+          ownerKey: args.ownerKey,
+          promptId: args.promptId,
+          entryId,
+          now,
+        });
+      }
     }
 
     await ctx.db.insert("usageEvents", {
@@ -108,6 +130,88 @@ export async function updateEntryBodyForOwner(
     body,
     source: entry.source,
   };
+}
+
+export const persistReflectionGeneration = internalMutation({
+  args: {
+    ownerKey: v.string(),
+    entryWindowStart: v.number(),
+    entryWindowEnd: v.number(),
+    questions: v.array(v.string()),
+  },
+  handler: async (ctx, args): Promise<ReflectionPromptPublic[]> => {
+    const now = Date.now();
+    await ensureProfile(ctx, args.ownerKey, now);
+
+    const runId = await ctx.db.insert("reflectionRuns", {
+      ownerKey: args.ownerKey,
+      entryWindowStart: args.entryWindowStart,
+      entryWindowEnd: args.entryWindowEnd,
+      status: "generated",
+      promptCount: args.questions.length,
+      createdAt: now,
+    });
+
+    const prompts: ReflectionPromptPublic[] = [];
+    for (const question of args.questions) {
+      const promptId = await ctx.db.insert("reflectionPrompts", {
+        ownerKey: args.ownerKey,
+        runId,
+        question,
+        status: "open",
+        createdAt: now,
+        updatedAt: now,
+      });
+      prompts.push({
+        id: promptId,
+        question,
+        status: "open",
+        createdAt: now,
+      });
+    }
+
+    return prompts;
+  },
+});
+
+export const recordSkippedReflectionRun = internalMutation({
+  args: {
+    ownerKey: v.string(),
+    entryWindowStart: v.number(),
+    entryWindowEnd: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    await ensureProfile(ctx, args.ownerKey, now);
+    await ctx.db.insert("reflectionRuns", {
+      ownerKey: args.ownerKey,
+      entryWindowStart: args.entryWindowStart,
+      entryWindowEnd: args.entryWindowEnd,
+      status: "skipped",
+      promptCount: 0,
+      createdAt: now,
+    });
+  },
+});
+
+async function markReflectionPromptAnswered(
+  ctx: MutationCtx,
+  args: {
+    ownerKey: string;
+    promptId: Id<"reflectionPrompts">;
+    entryId: Id<"entries">;
+    now: number;
+  },
+) {
+  const prompt = await ctx.db.get(args.promptId);
+  if (!prompt || prompt.ownerKey !== args.ownerKey) {
+    throw new Error("REFLECTION_PROMPT_NOT_FOUND");
+  }
+  await ctx.db.patch(args.promptId, {
+    status: "answered",
+    answeredEntryId: args.entryId,
+    updatedAt: args.now,
+  });
 }
 
 async function ensureProfile(

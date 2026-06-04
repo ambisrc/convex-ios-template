@@ -79,6 +79,26 @@ describe("starter command execution", () => {
     ).rejects.toThrow("AUTH_REQUIRED");
   });
 
+  it("saves a plain voice brain dump without command grammar", async () => {
+    const t = convexTest(schema, modules).withIdentity(identity);
+
+    const response = await t.action(api.commands.submitCommand, {
+      text: "I felt scattered today but clearer after walking",
+      source: "voice",
+    });
+
+    expect(response.status).toBe("applied");
+    expect(response.operations).toEqual([
+      { type: "create_entry", body: "I felt scattered today but clearer after walking" },
+    ]);
+
+    const entries = await t.query(api.entries.listEntries, {});
+    expect(entries[0]).toMatchObject({
+      body: "I felt scattered today but clearer after walking",
+      source: "voice",
+    });
+  });
+
   it("applies plain non-empty text as a starter entry", async () => {
     const t = convexTest(schema, modules).withIdentity(identity);
 

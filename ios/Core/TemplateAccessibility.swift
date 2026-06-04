@@ -7,4 +7,10 @@ enum TemplateAccessibility {
     static let entryBodyPrefix = "voice-template.entries.body"
     static let settingsOpen = "voice-template.settings.open"
     static let deleteAccount = "voice-template.settings.account.delete"
+    static let homeBrainDumpCard = "journal.home.brain-dump-card"
+    static let homeReflectionPrompt = "journal.home.reflection-prompt"
+    static let brainDumpStartVoice = "journal.brain-dump.voice.start"
+    static let brainDumpWaveform = "journal.brain-dump.waveform"
+    static let entryEditBody = "journal.entry-edit.body"
+    static let entryEditSave = "journal.entry-edit.save"
 }

@@ -9,6 +9,7 @@ final class TemplateConvexArgumentDecoderTests: XCTestCase {
 
         XCTAssertEqual(args["text"] as? String, "hello")
         XCTAssertEqual(args["source"] as? String, "typed")
+        XCTAssertNil(args["promptId"] as? String)
     }
 
     func testDecodeEmptyBodyProducesEmptyArguments() throws {

@@ -22,6 +22,8 @@ enum TemplateBackendEndpoints {
     static let transcribeVoiceCommand = "commands:transcribeVoiceCommand"
     static let deleteAccount = "commands:deleteAccount"
     static let listEntries = "entries:listEntries"
+    static let listReflections = "reflections:listLatest"
+    static let generateReflections = "reflections:generateNow"
     static let updateEntry = "entries:updateEntry"
 }
 
@@ -29,6 +31,8 @@ protocol TemplateCommandServicing {
     func submitCommand(_ request: TemplateConvexCommandRequest) async throws -> TemplateCommandResult
     func transcribeVoice(_ request: TemplateVoiceTranscriptionRequest) async throws -> TemplateVoiceTranscriptionResult
     func listEntries() async throws -> [TemplateListedEntry]
+    func listReflections() async throws -> [TemplateReflectionPrompt]
+    func generateReflections() async throws -> TemplateGenerateReflectionsResult
     func updateEntry(id: String, body: String) async throws -> TemplateListedEntry
     func deleteAccount() async throws -> TemplateDeleteAccountResult
 }
@@ -62,6 +66,20 @@ struct TemplateBackendClient: TemplateCommandServicing {
     func listEntries() async throws -> [TemplateListedEntry] {
         try await callQuery(
             TemplateBackendEndpoints.listEntries,
+            request: EmptyConvexRequest()
+        )
+    }
+
+    func listReflections() async throws -> [TemplateReflectionPrompt] {
+        try await callQuery(
+            TemplateBackendEndpoints.listReflections,
+            request: EmptyConvexRequest()
+        )
+    }
+
+    func generateReflections() async throws -> TemplateGenerateReflectionsResult {
+        try await callAction(
+            TemplateBackendEndpoints.generateReflections,
             request: EmptyConvexRequest()
         )
     }
@@ -143,6 +161,14 @@ struct PlaceholderTemplateBackendClient: TemplateCommandServicing {
 
     func listEntries() async throws -> [TemplateListedEntry] {
         try requireConfigured(action: TemplateBackendEndpoints.listEntries)
+    }
+
+    func listReflections() async throws -> [TemplateReflectionPrompt] {
+        try requireConfigured(action: TemplateBackendEndpoints.listReflections)
+    }
+
+    func generateReflections() async throws -> TemplateGenerateReflectionsResult {
+        try requireConfigured(action: TemplateBackendEndpoints.generateReflections)
     }
 
     func updateEntry(id: String, body: String) async throws -> TemplateListedEntry {

@@ -369,6 +369,8 @@ async function deleteOwnedDataBatch(ctx: MutationCtx, ownerKey: string): Promise
   const commandHistory = await deleteCommandHistory(ctx, ownerKey);
   const appleSignInCredentials = await deleteAppleCredentials(ctx, ownerKey);
   const usageEvents = await deleteUsageEvents(ctx, ownerKey);
+  const reflectionPrompts = await deleteReflectionPrompts(ctx, ownerKey);
+  const reflectionRuns = await deleteReflectionRuns(ctx, ownerKey);
 
   return {
     deleted: {
@@ -377,13 +379,17 @@ async function deleteOwnedDataBatch(ctx: MutationCtx, ownerKey: string): Promise
       commandHistory: commandHistory.deleted,
       appleSignInCredentials: appleSignInCredentials.deleted,
       usageEvents: usageEvents.deleted,
+      reflectionPrompts: reflectionPrompts.deleted,
+      reflectionRuns: reflectionRuns.deleted,
     },
     hasMore:
       profiles.hasMore
       || entries.hasMore
       || commandHistory.hasMore
       || appleSignInCredentials.hasMore
-      || usageEvents.hasMore,
+      || usageEvents.hasMore
+      || reflectionPrompts.hasMore
+      || reflectionRuns.hasMore,
   };
 }
 
@@ -422,6 +428,22 @@ async function deleteAppleCredentials(ctx: MutationCtx, ownerKey: string) {
 async function deleteUsageEvents(ctx: MutationCtx, ownerKey: string) {
   const rows = await ctx.db
     .query("usageEvents")
+    .withIndex("by_ownerKey_and_createdAt", (q) => q.eq("ownerKey", ownerKey))
+    .take(DELETE_BATCH_LIMIT + 1);
+  return await deleteRows(ctx, rows);
+}
+
+async function deleteReflectionPrompts(ctx: MutationCtx, ownerKey: string) {
+  const rows = await ctx.db
+    .query("reflectionPrompts")
+    .withIndex("by_ownerKey_and_createdAt", (q) => q.eq("ownerKey", ownerKey))
+    .take(DELETE_BATCH_LIMIT + 1);
+  return await deleteRows(ctx, rows);
+}
+
+async function deleteReflectionRuns(ctx: MutationCtx, ownerKey: string) {
+  const rows = await ctx.db
+    .query("reflectionRuns")
     .withIndex("by_ownerKey_and_createdAt", (q) => q.eq("ownerKey", ownerKey))
     .take(DELETE_BATCH_LIMIT + 1);
   return await deleteRows(ctx, rows);

@@ -37,7 +37,7 @@ assignments. Placeholder values in `.env.example` are allowed.
 Set server-side values in the linked Convex deployment:
 
 ```sh
-npx convex env set APPLE_SIGN_IN_CLIENT_IDS "com.example.voiceagent"
+npx convex env set APPLE_SIGN_IN_CLIENT_IDS "com.ambimake.reflection"
 npx convex env set APPLE_SIGN_IN_CLIENT_SECRET "<generated-jwt>"
 npx convex env set GROQ_API_KEY "<groq-api-key>"
 npx convex env set SENTRY_DSN "<sentry-dsn>"

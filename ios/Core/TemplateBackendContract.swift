@@ -45,9 +45,62 @@ struct TemplateListedEntry: Decodable, Equatable {
     let source: TemplateCommandSource
 }
 
-struct TemplateUpdateEntryRequest: Encodable, Equatable {
+struct TemplateReflectionPrompt: Decodable, Equatable, Identifiable {
+    enum Status: String, Decodable, Equatable {
+        case open
+        case answered
+    }
+
     let id: String
-    let body: String
+    let question: String
+    let status: Status
+    let createdAt: Double
+
+    static let fixture = TemplateReflectionPrompt(
+        id: "reflectionPromptFixture",
+        question: "What kept coming back?",
+        status: .open,
+        createdAt: 1_720_000_000_000
+    )
+}
+
+enum TemplateGenerateReflectionsResult: Decodable, Equatable {
+    case generated(prompts: [TemplateReflectionPrompt])
+    case skipped(reason: String, prompts: [TemplateReflectionPrompt])
+    case configurationMissing(missing: String, prompts: [TemplateReflectionPrompt])
+
+    private enum CodingKeys: String, CodingKey {
+        case status
+        case prompts
+        case reason
+        case missing
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let status = try container.decode(String.self, forKey: .status)
+        let prompts = try container.decode([TemplateReflectionPrompt].self, forKey: .prompts)
+        switch status {
+        case "generated":
+            self = .generated(prompts: prompts)
+        case "skipped":
+            self = .skipped(
+                reason: try container.decode(String.self, forKey: .reason),
+                prompts: prompts
+            )
+        case "configuration_missing":
+            self = .configurationMissing(
+                missing: try container.decode(String.self, forKey: .missing),
+                prompts: prompts
+            )
+        default:
+            throw DecodingError.dataCorruptedError(
+                forKey: .status,
+                in: container,
+                debugDescription: "Unsupported reflection generation status: \(status)"
+            )
+        }
+    }
 }
 
 struct TemplateCommandResult: Decodable, Equatable {
@@ -93,6 +146,47 @@ enum TemplateDeleteAccountResult: Decodable, Equatable {
         let commandHistory: Int
         let appleSignInCredentials: Int
         let usageEvents: Int
+        let reflectionPrompts: Int
+        let reflectionRuns: Int
+
+        init(
+            profiles: Int,
+            entries: Int,
+            commandHistory: Int,
+            appleSignInCredentials: Int,
+            usageEvents: Int,
+            reflectionPrompts: Int = 0,
+            reflectionRuns: Int = 0
+        ) {
+            self.profiles = profiles
+            self.entries = entries
+            self.commandHistory = commandHistory
+            self.appleSignInCredentials = appleSignInCredentials
+            self.usageEvents = usageEvents
+            self.reflectionPrompts = reflectionPrompts
+            self.reflectionRuns = reflectionRuns
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            profiles = try container.decode(Int.self, forKey: .profiles)
+            entries = try container.decode(Int.self, forKey: .entries)
+            commandHistory = try container.decode(Int.self, forKey: .commandHistory)
+            appleSignInCredentials = try container.decode(Int.self, forKey: .appleSignInCredentials)
+            usageEvents = try container.decode(Int.self, forKey: .usageEvents)
+            reflectionPrompts = try container.decodeIfPresent(Int.self, forKey: .reflectionPrompts) ?? 0
+            reflectionRuns = try container.decodeIfPresent(Int.self, forKey: .reflectionRuns) ?? 0
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case profiles
+            case entries
+            case commandHistory
+            case appleSignInCredentials
+            case usageEvents
+            case reflectionPrompts
+            case reflectionRuns
+        }
     }
 
     struct CleanupStatus: Decodable, Equatable {

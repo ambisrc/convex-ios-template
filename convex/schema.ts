@@ -17,6 +17,27 @@ export default defineSchema({
     ownerKey: v.string(),
     body: v.string(),
     source: v.union(v.literal("typed"), v.literal("voice")),
+    promptId: v.optional(v.id("reflectionPrompts")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_ownerKey_and_createdAt", ["ownerKey", "createdAt"]),
+
+  reflectionRuns: defineTable({
+    ownerKey: v.string(),
+    entryWindowStart: v.number(),
+    entryWindowEnd: v.number(),
+    status: v.union(v.literal("generated"), v.literal("skipped"), v.literal("failed")),
+    promptCount: v.number(),
+    errorCode: v.optional(v.string()),
+    createdAt: v.number(),
+  }).index("by_ownerKey_and_createdAt", ["ownerKey", "createdAt"]),
+
+  reflectionPrompts: defineTable({
+    ownerKey: v.string(),
+    runId: v.id("reflectionRuns"),
+    question: v.string(),
+    status: v.union(v.literal("open"), v.literal("answered")),
+    answeredEntryId: v.optional(v.id("entries")),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_ownerKey_and_createdAt", ["ownerKey", "createdAt"]),

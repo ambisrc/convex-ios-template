@@ -70,6 +70,38 @@ describe("starter account lifecycle", () => {
     expect(Object.keys(contract.cleanupFailed.deleted).sort()).toEqual(expectedKeys);
   });
 
+  it("deletes reflection prompts and runs when deleting an account", async () => {
+    vi.stubGlobal("process", { env: { GROQ_API_KEY: "test-groq-key" } });
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      choices: [{
+        message: {
+          content: JSON.stringify({
+            questions: ["What kept coming back?"],
+          }),
+        },
+      }],
+    }), { status: 200 })));
+
+    const t = convexTest(schema, modules).withIdentity(identity);
+    await t.action(api.commands.submitCommand, {
+      text: "I felt scattered today but clearer after walking",
+      source: "voice",
+    });
+    await t.action(api.reflections.generateNow, {});
+
+    const response = await t.action(api.commands.deleteAccount, {});
+
+    expect(response).toMatchObject({
+      status: "deleted",
+      deleted: {
+        entries: 1,
+        reflectionPrompts: 1,
+        reflectionRuns: 1,
+      },
+    });
+    await expect(t.query(api.reflections.listLatest, {})).resolves.toEqual([]);
+  });
+
   it("deletes owner data and runs cleanup hooks without live vendor credentials", async () => {
     const t = convexTest(schema, modules).withIdentity(identity);
 
@@ -78,7 +110,7 @@ describe("starter account lifecycle", () => {
       source: "typed",
     });
     await t.action(api.commands.recordAppleSignInAuthorization, {
-      clientId: "com.example.voiceagent",
+      clientId: "com.ambimake.reflection",
       refreshToken: "test-refresh-token",
     });
 

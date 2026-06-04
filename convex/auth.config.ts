@@ -8,7 +8,7 @@ export default {
   providers: [
     {
       domain: "https://appleid.apple.com",
-      applicationID: appleSignInClientIds?.[0] ?? "com.example.voiceagent",
+      applicationID: appleSignInClientIds?.[0] ?? "com.ambimake.reflection",
     },
   ],
 } satisfies AuthConfig;

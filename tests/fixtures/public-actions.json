@@ -46,7 +46,9 @@
           "entries": 1,
           "commandHistory": 1,
           "appleSignInCredentials": 0,
-          "usageEvents": 1
+          "usageEvents": 1,
+          "reflectionPrompts": 0,
+          "reflectionRuns": 0
         },
         "batches": 1,
         "cleanup": {
@@ -65,7 +67,9 @@
           "entries": 1000,
           "commandHistory": 1000,
           "appleSignInCredentials": 0,
-          "usageEvents": 1000
+          "usageEvents": 1000,
+          "reflectionPrompts": 0,
+          "reflectionRuns": 0
         },
         "batches": 20,
         "jobStatus": "deleting"
@@ -77,7 +81,9 @@
           "entries": 1000,
           "commandHistory": 1000,
           "appleSignInCredentials": 0,
-          "usageEvents": 1000
+          "usageEvents": 1000,
+          "reflectionPrompts": 0,
+          "reflectionRuns": 0
         },
         "batches": 21,
         "cleanup": {
@@ -90,6 +96,20 @@
           }
         }
       }
+    },
+    "reflections:generateNow": {
+      "request": {},
+      "success": {
+        "status": "generated",
+        "prompts": [
+          {
+            "id": "reflectionPromptFixture",
+            "question": "What kept coming back?",
+            "status": "open",
+            "createdAt": 1720000000000
+          }
+        ]
+      }
     }
   },
   "queries": {
@@ -100,6 +120,17 @@
           "id": "entry_fixture",
           "body": "hello",
           "source": "typed"
+        }
+      ]
+    },
+    "reflections:listLatest": {
+      "request": {},
+      "success": [
+        {
+          "id": "reflectionPromptFixture",
+          "question": "What kept coming back?",
+          "status": "open",
+          "createdAt": 1720000000000
         }
       ]
     }

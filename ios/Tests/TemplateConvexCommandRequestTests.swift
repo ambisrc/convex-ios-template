@@ -16,7 +16,9 @@ final class TemplateConvexCommandRequestTests: XCTestCase {
         XCTAssertNotNil(fixture.actions[TemplateBackendEndpoints.submitCommand])
         XCTAssertNotNil(fixture.actions[TemplateBackendEndpoints.transcribeVoiceCommand])
         XCTAssertNotNil(fixture.actions[TemplateBackendEndpoints.deleteAccount])
+        XCTAssertNotNil(fixture.actions[TemplateBackendEndpoints.generateReflections])
         XCTAssertNotNil(fixture.queries[TemplateBackendEndpoints.listEntries])
+        XCTAssertNotNil(fixture.queries[TemplateBackendEndpoints.listReflections])
         XCTAssertNotNil(fixture.mutations[TemplateBackendEndpoints.updateEntry])
     }
 
@@ -99,6 +101,17 @@ final class TemplateConvexCommandRequestTests: XCTestCase {
         XCTAssertEqual(entries, [
             TemplateListedEntry(id: "entry_fixture", body: "hello", source: .typed),
         ])
+    }
+
+    func testReflectionPromptDecodesSharedFixture() throws {
+        let json = try PublicActionContractFixture.load()
+            .requiredQuery(TemplateBackendEndpoints.listReflections)
+            .successData()
+
+        let prompts = try JSONDecoder().decode([TemplateReflectionPrompt].self, from: json)
+
+        XCTAssertEqual(prompts.first?.question, "What kept coming back?")
+        XCTAssertEqual(prompts.first?.status, .open)
     }
 
     func testUpdateEntryRequestMatchesSharedContractFixture() throws {

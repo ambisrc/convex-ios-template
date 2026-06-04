@@ -151,7 +151,46 @@ final class VoiceAgentTemplateModelTests: XCTestCase {
     }
 
     func testVoiceCommandFallsBackWhenMicrophonePermissionDenied() async {
+        let model = VoiceAgentTemplateModel(
+            sessionService: StubSessionService(result: .success(TemplateSession(ownerKey: "test|owner"))),
+            commandService: StubCommandService(),
+            voiceCapture: StubVoiceCapture(audio: TemplateVoiceAudio(audioBase64: "dGVzdA==", mimeType: "audio/m4a")),
+            analytics: TemplateProductAnalytics(configuration: nil),
+            sentryScope: TemplateSentryUserScope(),
+            launchArguments: []
+        )
+
+        await model.startVoiceCommand(permission: .denied)
+
+        XCTAssertEqual(model.voiceState, .typedFallback(reason: "permission_denied"))
+    }
+
+    func testVoiceCommandShowsRecordingFeedbackBeforeCaptureCompletes() async {
+        let voiceCapture = StubVoiceCapture(result: .failure(.failed("Stop after observing recording state.")))
+        let model = VoiceAgentTemplateModel(
+            sessionService: StubSessionService(result: .success(TemplateSession(ownerKey: "test|owner"))),
+            commandService: StubCommandService(),
+            voiceCapture: voiceCapture,
+            analytics: TemplateProductAnalytics(configuration: nil),
+            sentryScope: TemplateSentryUserScope(),
+            launchArguments: []
+        )
+        voiceCapture.onCapture = { permission in
+            await MainActor.run {
+                XCTAssertEqual(permission, .granted)
+                XCTAssertEqual(model.voiceState, .recording)
+                XCTAssertEqual(model.feedbackMessage, "Recording...")
+            }
+        }
+
+        await model.startVoiceCommand(permission: .granted)
+
+        XCTAssertEqual(voiceCapture.captureCallCount, 1)
+    }
+
+    func testVoiceCommandShowsTranscribingFeedbackAfterCaptureCompletes() async {
         let commandService = StubCommandService()
+        commandService.transcriptionError = .failed("Stop after observing transcribing state.")
         let voiceCapture = StubVoiceCapture(audio: TemplateVoiceAudio(audioBase64: "dGVzdA==", mimeType: "audio/m4a"))
         let model = VoiceAgentTemplateModel(
             sessionService: StubSessionService(result: .success(TemplateSession(ownerKey: "test|owner"))),
@@ -161,13 +200,45 @@ final class VoiceAgentTemplateModelTests: XCTestCase {
             sentryScope: TemplateSentryUserScope(),
             launchArguments: []
         )
+        commandService.onTranscribe = { request in
+            await MainActor.run {
+                XCTAssertEqual(request, TemplateVoiceTranscriptionRequest(audioBase64: "dGVzdA==", mimeType: "audio/m4a"))
+                XCTAssertEqual(model.feedbackMessage, "Transcribing...")
+                XCTAssertNil(model.voiceTranscriptPreview)
+            }
+        }
 
-        await model.startVoiceCommand(permission: .denied)
+        await model.startVoiceCommand(permission: .granted)
 
-        XCTAssertEqual(model.voiceState, .typedFallback(reason: "permission_denied"))
-        XCTAssertEqual(voiceCapture.captureCallCount, 0)
-        XCTAssertEqual(commandService.transcriptionRequests, [])
-        XCTAssertEqual(commandService.submittedCommands, [])
+        XCTAssertEqual(commandService.transcriptionRequests.count, 1)
+    }
+
+    func testVoiceCommandShowsTranscriptPreviewBeforeSubmitting() async {
+        let commandService = StubCommandService()
+        commandService.transcriptionResult = TemplateVoiceTranscriptionResult(transcript: "I felt more focused after walking")
+        commandService.submitError = .failed("Stop after observing transcript preview.")
+        let voiceCapture = StubVoiceCapture(audio: TemplateVoiceAudio(audioBase64: "dGVzdA==", mimeType: "audio/m4a"))
+        let model = VoiceAgentTemplateModel(
+            sessionService: StubSessionService(result: .success(TemplateSession(ownerKey: "test|owner"))),
+            commandService: commandService,
+            voiceCapture: voiceCapture,
+            analytics: TemplateProductAnalytics(configuration: nil),
+            sentryScope: TemplateSentryUserScope(),
+            launchArguments: []
+        )
+        commandService.onSubmit = { request in
+            await MainActor.run {
+                XCTAssertEqual(request.text, "I felt more focused after walking")
+                XCTAssertEqual(model.voiceTranscriptPreview, "I felt more focused after walking")
+                XCTAssertEqual(model.feedbackMessage, "Saving...")
+            }
+        }
+
+        await model.startVoiceCommand(permission: .granted)
+
+        XCTAssertEqual(commandService.submittedCommands.count, 1)
+        XCTAssertEqual(model.voiceTranscriptPreview, "I felt more focused after walking")
+        XCTAssertEqual(model.voiceState.fallbackReason, "command_submission_failed")
     }
 
     func testVoiceCommandUsesSpecificTypedFallbackReasonForCaptureFailures() async {
@@ -243,6 +314,47 @@ final class VoiceAgentTemplateModelTests: XCTestCase {
         XCTAssertFalse(model.isSignedIn)
         XCTAssertTrue(model.entries.isEmpty)
         XCTAssertNil(sentryScope.ownerKey)
+    }
+
+    func testLaunchFixtureShowsJournalHomeState() {
+        let model = VoiceAgentTemplateModel(
+            sessionService: StubSessionService(result: .success(TemplateSession(ownerKey: "test|owner"))),
+            commandService: StubCommandService(),
+            voiceCapture: StubVoiceCapture(),
+            analytics: TemplateProductAnalytics(configuration: nil),
+            sentryScope: TemplateSentryUserScope(),
+            launchArguments: ["--journal-home"]
+        )
+
+        XCTAssertTrue(model.isSignedIn)
+        XCTAssertEqual(model.screen, .home)
+        XCTAssertFalse(model.homeReflectionPrompts.isEmpty)
+    }
+
+    func testReflectionPromptStartsPromptLinkedVoiceDump() async {
+        let commandService = StubCommandService()
+        commandService.transcriptionResult = TemplateVoiceTranscriptionResult(transcript: "I keep thinking about focus")
+        commandService.submitResult = TemplateCommandResult(
+            summary: "Saved entry.",
+            operations: [.createEntry(body: "I keep thinking about focus")],
+            entries: [TemplateAppliedEntry(id: "entry-reflection", body: "I keep thinking about focus", source: .voice)]
+        )
+        let voiceCapture = StubVoiceCapture(audio: TemplateVoiceAudio(audioBase64: "dGVzdA==", mimeType: "audio/m4a"))
+        let model = VoiceAgentTemplateModel(
+            sessionService: StubSessionService(result: .success(TemplateSession(ownerKey: "test|owner"))),
+            commandService: commandService,
+            voiceCapture: voiceCapture,
+            microphonePermission: TemplateGrantedMicrophonePermissionService(),
+            analytics: TemplateProductAnalytics(configuration: nil),
+            sentryScope: TemplateSentryUserScope(),
+            launchArguments: ["--journal-home"]
+        )
+
+        await model.startVoiceDump(from: TemplateReflectionPrompt.fixture)
+
+        XCTAssertEqual(commandService.submittedCommands.first?.source, .voice)
+        XCTAssertEqual(commandService.submittedCommands.first?.promptId, TemplateReflectionPrompt.fixture.id)
+        XCTAssertEqual(model.entries.first?.body, "I keep thinking about focus")
     }
 
     func testDeleteAccountClearsWritableLocalStateWhenDeletionIsInProgress() async {
@@ -321,9 +433,13 @@ private final class StubCommandService: TemplateCommandServicing {
     var submitResult = TemplateCommandResult(summary: "Created entry.", entries: [])
     var submitError: TemplateServiceError?
     var transcriptionResult = TemplateVoiceTranscriptionResult(transcript: "")
+    var transcriptionError: TemplateServiceError?
+    var onSubmit: ((TemplateConvexCommandRequest) async -> Void)?
+    var onTranscribe: ((TemplateVoiceTranscriptionRequest) async -> Void)?
 
     func submitCommand(_ request: TemplateConvexCommandRequest) async throws -> TemplateCommandResult {
         submittedCommands.append(request)
+        await onSubmit?(request)
         if let submitError {
             throw submitError
         }
@@ -332,11 +448,23 @@ private final class StubCommandService: TemplateCommandServicing {
 
     func transcribeVoice(_ request: TemplateVoiceTranscriptionRequest) async throws -> TemplateVoiceTranscriptionResult {
         transcriptionRequests.append(request)
+        await onTranscribe?(request)
+        if let transcriptionError {
+            throw transcriptionError
+        }
         return transcriptionResult
     }
 
     func listEntries() async throws -> [TemplateListedEntry] {
         []
+    }
+
+    func listReflections() async throws -> [TemplateReflectionPrompt] {
+        [TemplateReflectionPrompt.fixture]
+    }
+
+    func generateReflections() async throws -> TemplateGenerateReflectionsResult {
+        .generated(prompts: [TemplateReflectionPrompt.fixture])
     }
 
     func updateEntry(id: String, body: String) async throws -> TemplateListedEntry {
@@ -364,6 +492,7 @@ private final class StubCommandService: TemplateCommandServicing {
 
 private final class StubVoiceCapture: TemplateVoiceCapturing {
     let result: Result<TemplateVoiceAudio, TemplateServiceError>
+    var onCapture: ((TemplateMicrophonePermission) async -> Void)?
     private(set) var captureCallCount = 0
 
     init(audio: TemplateVoiceAudio? = nil) {
@@ -380,6 +509,7 @@ private final class StubVoiceCapture: TemplateVoiceCapturing {
 
     func captureAudio(permission: TemplateMicrophonePermission) async throws -> TemplateVoiceAudio {
         captureCallCount += 1
+        await onCapture?(permission)
         return try result.get()
     }
 }

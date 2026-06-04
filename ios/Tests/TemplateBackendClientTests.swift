@@ -17,7 +17,7 @@ final class TemplateBackendClientTests: XCTestCase {
         )
 
         XCTAssertEqual(caller.actionCalls.map(\.name), [TemplateBackendEndpoints.submitCommand])
-        XCTAssertEqual(
+        XCTAssertEqualJSONObjects(
             caller.actionCalls.first?.body,
             try TemplateConvexCommandRequest(text: "Create a note saying hello", source: .typed).encodedBody()
         )
@@ -99,6 +99,22 @@ final class TemplateBackendClientTests: XCTestCase {
             XCTFail("Unexpected error: \(error)")
         }
     }
+}
+
+private func XCTAssertEqualJSONObjects(
+    _ lhs: Data?,
+    _ rhs: Data,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) {
+    guard let lhs else {
+        XCTFail("Expected JSON body", file: file, line: line)
+        return
+    }
+
+    let leftObject = try? JSONSerialization.jsonObject(with: lhs) as? NSDictionary
+    let rightObject = try? JSONSerialization.jsonObject(with: rhs) as? NSDictionary
+    XCTAssertEqual(leftObject, rightObject, file: file, line: line)
 }
 
 private final class ConvexCallerSpy: TemplateConvexCalling {

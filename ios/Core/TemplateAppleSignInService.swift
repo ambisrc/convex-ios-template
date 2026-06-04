@@ -112,7 +112,7 @@ extension TemplateAppleSignInService: ASAuthorizationControllerDelegate {
         do {
             let result = try TemplateAppleSignInCredentialParser.parse(
                 credential,
-                fallbackClientId: "com.example.voiceagent"
+                fallbackClientId: "com.ambimake.reflection"
             )
             finish(with: .success(result))
         } catch {
